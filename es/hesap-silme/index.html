@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eliminar cuenta · WinwayStats</title>
+<meta name="description" content="WinwayStats: pronósticos de fútbol sin dinero real y conciencia del comportamiento.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/es/hesap-silme">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/hesap-silme">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/hesap-silme">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/hesap-silme">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/hesap-silme">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/hesap-silme">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/es"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/es">Inicio</a><a href="/es/yazilar">Artículos</a><a href="/es/verilerim">Mis datos</a><a href="/es/hesap-silme" aria-current="page">Eliminar cuenta</a></nav>
+  <div class="langs"><a href="/hesap-silme" hreflang="tr">TR</a><a href="/en/hesap-silme" hreflang="en">EN</a><a href="/de/hesap-silme" hreflang="de">DE</a><a href="/ru/hesap-silme" hreflang="ru">RU</a><a href="/es/hesap-silme" hreflang="es" aria-current="true">ES</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Eliminar cuenta</h1>
+<p>Puedes eliminar tu cuenta de WinwayStats en la aplicación (Ajustes &gt; Eliminar cuenta) o en esta página.</p>
+<ul><li>Tras la solicitud, la cuenta espera 30 días. Si inicias sesión en la aplicación durante ese tiempo, la solicitud se cancela.</li><li>Pasados 30 días, tu cuenta y tus datos personales (nombre, correo, teléfono, fecha de nacimiento, favoritos, seguimientos, votos en encuestas) se eliminan definitivamente.</li><li>Los registros de boletos y monedas virtuales no se eliminan; se quita su vínculo con tu cuenta y solo se usan en estadísticas anónimas.</li></ul>
+<div id="login" hidden>
+<p class="muted">Inicia sesión con tu cuenta de la aplicación.</p>
+<form id="login-form">
+  <label>Correo electrónico<input id="email" type="email" autocomplete="email" required></label>
+  <label>Contraseña<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Iniciar sesión</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <p><b id="who"></b></p>
+  <form id="del-form">
+    <label style="display:flex;gap:10px;align-items:center;color:var(--text)"><input id="del-confirm" type="checkbox" style="width:20px;height:20px"> Quiero que se elimine mi cuenta.</label>
+    <button id="del-btn" class="danger" type="submit" disabled>Enviar solicitud de eliminación</button>
+  </form>
+  <div id="del-msg" class="msg"></div>
+  <div class="actions"><button id="signout" class="secondary" type="button">Cerrar sesión</button></div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/es/gizlilik">Política de privacidad</a><a href="/es/kullanici-sozlesmesi">Acuerdo de usuario</a><a href="/es/kvkk">Aviso KVKK</a><a href="/es/hakkimizda">Quiénes somos</a><a href="mailto:info@winway.com.tr">Contacto: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"es","page":"hesap-silme","s":{"login":{"email":"Correo electrónico","password":"Contraseña","signIn":"Iniciar sesión","signOut":"Cerrar sesión","intro":"Inicia sesión con tu cuenta de la aplicación.","invalid":"Correo o contraseña incorrectos.","notConfirmed":"Tu correo aún no está verificado. Inicia sesión en la aplicación para verificarlo.","captcha":"La verificación anti-bots no se completó. Espera un momento e inténtalo de nuevo.","generic":"Algo salió mal. Inténtalo de nuevo."},"myData":{"title":"Mis datos","intro":"Aquí puedes ver y descargar la información de tu cuenta. Para pronosticar, usa la aplicación.","username":"Nombre de usuario","balance":"Saldo actual","monthPoints":"Puntos este mes","coupons":"Boletos totales","won":"Ganados","lost":"Perdidos","void":"Anulados","pending":"Pendientes","recent":"Últimos boletos","cols":["Fecha","Partidos","Cuota total","Importe","Estado","Devuelto","Puntos"],"empty":"Aún no hay boletos.","download":"Descargar mis datos (JSON)","pendingDeletion":"Tu cuenta está en proceso de eliminación. Se eliminará definitivamente el {{date}}.","cancelDeletion":"Cancelar la solicitud de eliminación","cancelled":"Tu solicitud de eliminación se ha cancelado."},"del":{"title":"Eliminar cuenta","intro":"Puedes eliminar tu cuenta de WinwayStats en la aplicación (Ajustes > Eliminar cuenta) o en esta página.","rules":["Tras la solicitud, la cuenta espera 30 días. Si inicias sesión en la aplicación durante ese tiempo, la solicitud se cancela.","Pasados 30 días, tu cuenta y tus datos personales (nombre, correo, teléfono, fecha de nacimiento, favoritos, seguimientos, votos en encuestas) se eliminan definitivamente.","Los registros de boletos y monedas virtuales no se eliminan; se quita su vínculo con tu cuenta y solo se usan en estadísticas anónimas."],"confirm":"Quiero que se elimine mi cuenta.","button":"Enviar solicitud de eliminación","done":"Hemos recibido tu solicitud. Tu cuenta se eliminará el {{date}}. Si inicias sesión en la aplicación antes, la solicitud se cancela.","already":"Tu cuenta ya está en proceso de eliminación ({{date}})."},"status":{"won":"Ganado","lost":"Perdido","void":"Anulado","pending":"Pendiente"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>

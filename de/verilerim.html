@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meine Daten · WinwayStats</title>
+<meta name="description" content="WinwayStats: Fußball-Tipps ohne echtes Geld und Verhaltensbewusstsein.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/de/verilerim">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/verilerim">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/verilerim">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/verilerim">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/verilerim">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/verilerim">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/de"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/de">Start</a><a href="/de/yazilar">Artikel</a><a href="/de/verilerim" aria-current="page">Meine Daten</a><a href="/de/hesap-silme">Konto löschen</a></nav>
+  <div class="langs"><a href="/verilerim" hreflang="tr">TR</a><a href="/en/verilerim" hreflang="en">EN</a><a href="/de/verilerim" hreflang="de" aria-current="true">DE</a><a href="/ru/verilerim" hreflang="ru">RU</a><a href="/es/verilerim" hreflang="es">ES</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Meine Daten</h1>
+<p class="muted">Hier siehst du die Daten deines Kontos und kannst sie herunterladen. Tippen kannst du in der App.</p>
+<div id="login" hidden>
+<p class="muted">Melde dich mit deinem App-Konto an.</p>
+<form id="login-form">
+  <label>E-Mail<input id="email" type="email" autocomplete="email" required></label>
+  <label>Passwort<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Anmelden</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <div id="d-deletion" class="notice" hidden><span id="d-deletion-text"></span> <button id="d-cancel" class="secondary" type="button">Löschantrag zurückziehen</button></div>
+  <p><b id="who"></b></p>
+  <div class="stats"><div class="stat"><b id="d-balance">–</b><span>Aktuelles Guthaben</span></div><div class="stat"><b id="d-points">–</b><span>Punkte diesen Monat</span></div><div class="stat"><b id="d-coupons">–</b><span>Tippscheine gesamt</span></div><div class="stat"><b id="d-won">–</b><span>Gewonnen</span></div><div class="stat"><b id="d-lost">–</b><span>Verloren</span></div><div class="stat"><b id="d-void">–</b><span>Erstattet</span></div><div class="stat"><b id="d-pending">–</b><span>Offen</span></div></div>
+  <span id="d-username" hidden></span>
+  <h2>Letzte Tippscheine</h2>
+  <p id="d-empty" class="muted" hidden>Noch keine Tippscheine.</p>
+  <div class="table-wrap"><table id="d-table"><thead><tr><th>Datum</th><th>Spiele</th><th>Gesamtquote</th><th>Einsatz</th><th>Status</th><th>Zurück</th><th>Punkte</th></tr></thead><tbody id="d-rows"></tbody></table></div>
+  <div class="actions"><button id="d-download" type="button">Meine Daten herunterladen (JSON)</button><button id="signout" class="secondary" type="button">Abmelden</button></div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/de/gizlilik">Datenschutzerklärung</a><a href="/de/kullanici-sozlesmesi">Nutzungsvereinbarung</a><a href="/de/kvkk">KVKK-Hinweis</a><a href="/de/hakkimizda">Über uns</a><a href="mailto:info@winway.com.tr">Kontakt: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"de","page":"verilerim","s":{"login":{"email":"E-Mail","password":"Passwort","signIn":"Anmelden","signOut":"Abmelden","intro":"Melde dich mit deinem App-Konto an.","invalid":"E-Mail oder Passwort ist falsch.","notConfirmed":"Deine E-Mail-Adresse ist noch nicht bestätigt. Melde dich in der App an, um sie zu bestätigen.","captcha":"Die Bot-Prüfung wurde nicht abgeschlossen. Warte kurz und versuche es erneut.","generic":"Etwas ist schiefgelaufen. Bitte versuche es erneut."},"myData":{"title":"Meine Daten","intro":"Hier siehst du die Daten deines Kontos und kannst sie herunterladen. Tippen kannst du in der App.","username":"Benutzername","balance":"Aktuelles Guthaben","monthPoints":"Punkte diesen Monat","coupons":"Tippscheine gesamt","won":"Gewonnen","lost":"Verloren","void":"Erstattet","pending":"Offen","recent":"Letzte Tippscheine","cols":["Datum","Spiele","Gesamtquote","Einsatz","Status","Zurück","Punkte"],"empty":"Noch keine Tippscheine.","download":"Meine Daten herunterladen (JSON)","pendingDeletion":"Dein Konto wird gelöscht. Es wird am {{date}} endgültig gelöscht.","cancelDeletion":"Löschantrag zurückziehen","cancelled":"Dein Löschantrag wurde zurückgezogen."},"del":{"title":"Konto löschen","intro":"Du kannst dein WinwayStats-Konto in der App (Einstellungen > Konto löschen) oder auf dieser Seite löschen.","rules":["Nach dem Antrag wartet das Konto 30 Tage. Meldest du dich in dieser Zeit in der App an, wird der Antrag zurückgezogen.","Nach 30 Tagen werden dein Konto und deine personenbezogenen Daten (Name, E-Mail, Telefon, Geburtsdatum, Favoriten, Abos, Umfragestimmen) endgültig gelöscht.","Tippschein- und Coin-Datensätze werden nicht gelöscht; die Verbindung zu deinem Konto wird entfernt und sie werden nur in anonymen Statistiken verwendet."],"confirm":"Ich möchte, dass mein Konto gelöscht wird.","button":"Löschantrag senden","done":"Dein Antrag ist eingegangen. Dein Konto wird am {{date}} gelöscht. Meldest du dich vorher in der App an, wird der Antrag zurückgezogen.","already":"Dein Konto wird bereits gelöscht ({{date}})."},"status":{"won":"Gewonnen","lost":"Verloren","void":"Erstattet","pending":"Offen"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>

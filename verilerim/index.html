@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verilerim · WinwayStats</title>
+<meta name="description" content="WinwayStats: gerçek para olmadan futbol tahmini ve davranış farkındalığı.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/verilerim">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/verilerim">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/verilerim">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/verilerim">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/verilerim">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/verilerim">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/">Anasayfa</a><a href="/yazilar">Yazılar</a><a href="/verilerim" aria-current="page">Verilerim</a><a href="/hesap-silme">Hesap Silme</a></nav>
+  <div class="langs"><a href="/verilerim" hreflang="tr" aria-current="true">TR</a><a href="/en/verilerim" hreflang="en">EN</a><a href="/de/verilerim" hreflang="de">DE</a><a href="/ru/verilerim" hreflang="ru">RU</a><a href="/es/verilerim" hreflang="es">ES</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Verilerim</h1>
+<p class="muted">Hesabına ait bilgileri buradan görebilir ve indirebilirsin. Kupon oynamak için uygulamayı kullan.</p>
+<div id="login" hidden>
+<p class="muted">Uygulamadaki hesabınla giriş yap.</p>
+<form id="login-form">
+  <label>E-posta<input id="email" type="email" autocomplete="email" required></label>
+  <label>Şifre<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Giriş Yap</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <div id="d-deletion" class="notice" hidden><span id="d-deletion-text"></span> <button id="d-cancel" class="secondary" type="button">Silme talebini iptal et</button></div>
+  <p><b id="who"></b></p>
+  <div class="stats"><div class="stat"><b id="d-balance">–</b><span>Güncel bakiye</span></div><div class="stat"><b id="d-points">–</b><span>Bu ayın puanı</span></div><div class="stat"><b id="d-coupons">–</b><span>Toplam kupon</span></div><div class="stat"><b id="d-won">–</b><span>Kazanan</span></div><div class="stat"><b id="d-lost">–</b><span>Kaybeden</span></div><div class="stat"><b id="d-void">–</b><span>İade</span></div><div class="stat"><b id="d-pending">–</b><span>Bekleyen</span></div></div>
+  <span id="d-username" hidden></span>
+  <h2>Son kuponlar</h2>
+  <p id="d-empty" class="muted" hidden>Henüz kupon yok.</p>
+  <div class="table-wrap"><table id="d-table"><thead><tr><th>Tarih</th><th>Maç</th><th>Toplam oran</th><th>Tutar</th><th>Durum</th><th>Dönen</th><th>Puan</th></tr></thead><tbody id="d-rows"></tbody></table></div>
+  <div class="actions"><button id="d-download" type="button">Verilerimi indir (JSON)</button><button id="signout" class="secondary" type="button">Çıkış Yap</button></div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/gizlilik">Gizlilik Politikası</a><a href="/kullanici-sozlesmesi">Kullanıcı Sözleşmesi</a><a href="/kvkk">KVKK Aydınlatma Metni</a><a href="/hakkimizda">Hakkımızda</a><a href="mailto:info@winway.com.tr">İletişim: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"tr","page":"verilerim","s":{"login":{"email":"E-posta","password":"Şifre","signIn":"Giriş Yap","signOut":"Çıkış Yap","intro":"Uygulamadaki hesabınla giriş yap.","invalid":"E-posta ya da şifre hatalı.","notConfirmed":"E-posta adresin henüz doğrulanmamış. Uygulamadan giriş yapıp doğrulayabilirsin.","captcha":"Robot doğrulaması tamamlanmadı. Biraz bekleyip yeniden dene.","generic":"Bir sorun oluştu. Lütfen yeniden dene."},"myData":{"title":"Verilerim","intro":"Hesabına ait bilgileri buradan görebilir ve indirebilirsin. Kupon oynamak için uygulamayı kullan.","username":"Kullanıcı adı","balance":"Güncel bakiye","monthPoints":"Bu ayın puanı","coupons":"Toplam kupon","won":"Kazanan","lost":"Kaybeden","void":"İade","pending":"Bekleyen","recent":"Son kuponlar","cols":["Tarih","Maç","Toplam oran","Tutar","Durum","Dönen","Puan"],"empty":"Henüz kupon yok.","download":"Verilerimi indir (JSON)","pendingDeletion":"Hesabın silinme sürecinde. {{date}} tarihinde kalıcı olarak silinecek.","cancelDeletion":"Silme talebini iptal et","cancelled":"Silme talebin iptal edildi."},"del":{"title":"Hesap Silme","intro":"WinwayStats hesabını uygulamadan (Ayarlar > Hesabı Sil) ya da bu sayfadan silebilirsin.","rules":["Talepten sonra hesap 30 gün bekler. Bu sürede uygulamaya giriş yaparsan talep iptal olur.","30 gün sonunda hesabın ve kişisel verilerin (ad, e-posta, telefon, doğum tarihi, favoriler, takip, anket oyları) kalıcı olarak silinir.","Kupon ve sanal coin kayıtları silinmez; hesabınla bağlantısı kaldırılır ve yalnızca anonim istatistiklerde kullanılır."],"confirm":"Hesabımın silinmesini istiyorum.","button":"Silme talebini gönder","done":"Talebin alındı. Hesabın {{date}} tarihinde silinecek. Bu tarihe kadar uygulamaya giriş yaparsan talep iptal olur.","already":"Hesabın zaten silinme sürecinde ({{date}})."},"status":{"won":"Kazandı","lost":"Kaybetti","void":"İade","pending":"Bekliyor"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>
