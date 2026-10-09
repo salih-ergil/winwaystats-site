@@ -83,3 +83,41 @@ footer.site a { color: var(--muted); }
   h1 { font-size: 25px; }
   .hero p { font-size: 16px; }
 }
+
+/* Verilerim: hesap çubuğu, kartlar ve grafikler */
+.account-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin: 8px 0 16px; }
+button.small { padding: 8px 14px; font-size: 14px; }
+.small { font-size: 13px; }
+.card.panel { margin: 16px 0; }
+.card.panel h2 { margin: 0 0 12px; }
+.card.panel h3 { font-size: 16px; margin: 20px 0 8px; }
+.card.panel p { margin: 6px 0; color: #e4e8e4; font-size: 15px; }
+.card.panel p.muted { color: var(--muted); }
+.stats.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card .stat { background: var(--surface-high); }
+.stat small { display: block; font-size: 12px; color: var(--muted); }
+.meter { height: 10px; background: var(--surface-high); border-radius: 999px; overflow: hidden; margin: 4px 0 14px; }
+.meter span { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+svg.chart { width: 100%; height: auto; display: block; margin: 6px 0; }
+svg .axis { fill: var(--muted); font-size: 12px; }
+svg .val { fill: var(--text); font-size: 12px; font-weight: 600; }
+.donut-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+svg.donut { width: 150px; height: 150px; }
+svg .donut-total { fill: var(--text); font-size: 22px; font-weight: 700; }
+.legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.legend li { display: flex; align-items: center; gap: 8px; font-size: 15px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.patterns { display: grid; gap: 10px; }
+.pattern { border-left: 3px solid var(--yellow); padding: 4px 0 4px 12px; display: grid; gap: 2px; font-size: 14px; }
+.pattern.lossStreak { border-color: var(--red); }
+.pattern.winStreak { border-color: var(--green); }
+tr.coupon-row { cursor: pointer; }
+tr.coupon-row:hover, tr.coupon-row.open { background: var(--surface); }
+tr.coupon-detail > td { background: var(--surface); padding: 4px 8px 12px; white-space: normal; }
+table.inner { font-size: 13px; }
+table.inner td { white-space: normal; }
+@media (max-width: 520px) {
+  .stats.three { grid-template-columns: 1fr; }
+  .stat b { font-size: 19px; }
+}
