@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meus dados · WinwayStats</title>
+<meta name="description" content="WinwayStats: previsões de futebol sem dinheiro real e consciência sobre o seu comportamento.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/pt/verilerim">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/verilerim">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/verilerim">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/verilerim">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/verilerim">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/verilerim">
+<link rel="alternate" hreflang="fr" href="https://winwaystats.com/fr/verilerim">
+<link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/verilerim">
+<link rel="alternate" hreflang="it" href="https://winwaystats.com/it/verilerim">
+<link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/verilerim">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/pt"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/pt">Início</a><a href="/pt/yazilar">Artigos</a><a href="/pt/verilerim" aria-current="page">Meus dados</a><a href="/pt/hesap-silme">Excluir conta</a></nav>
+  <div class="langs"><a href="/verilerim" hreflang="tr">TR</a><a href="/en/verilerim" hreflang="en">EN</a><a href="/de/verilerim" hreflang="de">DE</a><a href="/ru/verilerim" hreflang="ru">RU</a><a href="/es/verilerim" hreflang="es">ES</a><a href="/fr/verilerim" hreflang="fr">FR</a><a href="/pt/verilerim" hreflang="pt" aria-current="true">PT</a><a href="/it/verilerim" hreflang="it">IT</a><a href="/pl/verilerim" hreflang="pl">PL</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Meus dados</h1>
+<p class="muted">Veja e baixe as informações da sua conta. Use o app para fazer suas previsões.</p>
+<div id="login" hidden>
+<p class="muted">Entre com a conta do app.</p>
+<form id="login-form">
+  <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+  <label>Senha<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Entrar</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <div class="account-bar"><b id="who"></b><button id="signout" class="secondary small" type="button">Sair</button></div>
+  <div id="d-deletion" class="notice" hidden><span id="d-deletion-text"></span> <button id="d-cancel" class="secondary" type="button">Cancelar o pedido de exclusão</button></div>
+  <p id="d-loading" class="muted">Carregando os dados…</p>
+  <div id="d-content" hidden>
+    <div class="stats"><div class="stat"><b id="d-balance">–</b><span>Saldo atual</span></div><div class="stat"><b id="d-points">–</b><span>Pontos do mês</span></div><div class="stat"><b id="d-coupons">–</b><span>Total de bilhetes</span></div><div class="stat"><b id="d-won">–</b><span>Ganhos</span></div><div class="stat"><b id="d-lost">–</b><span>Perdidos</span></div><div class="stat"><b id="d-void">–</b><span>Anulados</span></div><div class="stat"><b id="d-pending">–</b><span>Pendentes</span></div></div>
+    <p class="muted small">Os mesmos dados da tela inicial do app. As análises de comportamento são atualizadas a cada 12 horas.</p>
+    <section id="c-budget" class="card panel"></section>
+    <section id="c-decision" class="card panel"></section>
+    <section id="c-stats" class="card panel"></section>
+    <section id="c-points" class="card panel"></section>
+    <h2>Últimos bilhetes</h2>
+    <p id="d-empty" class="muted" hidden>Ainda não há bilhetes.</p>
+    <p id="d-list-info" class="muted small"><span id="d-shown"></span> · Clique em um bilhete para ver os detalhes.</p>
+    <div class="table-wrap"><table id="d-table"><thead><tr><th>Data</th><th>Jogos</th><th>Odd total</th><th>Valor</th><th>Status</th><th>Retorno</th><th>Pontos</th></tr></thead><tbody id="d-rows"></tbody></table></div>
+    <div class="actions"><button id="d-more" class="secondary" type="button" hidden>Mostrar mais (20 bilhetes)</button><button id="d-download" type="button">Baixar meus dados (JSON)</button></div>
+  </div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/pt/gizlilik">Política de Privacidade</a><a href="/pt/kullanici-sozlesmesi">Termos de Uso</a><a href="/pt/kvkk">Aviso de Informação KVKK</a><a href="/pt/hakkimizda">Sobre nós</a><a href="/pt/on-bilgilendirme">Formulário de Informações Prévias</a><a href="/pt/mesafeli-satis">Contrato de Venda à Distância</a><a href="mailto:info@winway.com.tr">Contato: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"pt","page":"verilerim","s":{"login":{"email":"E-mail","password":"Senha","signIn":"Entrar","signOut":"Sair","intro":"Entre com a conta do app.","invalid":"E-mail ou senha incorretos.","notConfirmed":"Seu e-mail ainda não foi verificado. Entre no app para verificá-lo.","captcha":"A verificação antirrobô não foi concluída. Aguarde um instante e tente de novo.","generic":"Ocorreu um problema. Tente novamente."},"myData":{"title":"Meus dados","intro":"Veja e baixe as informações da sua conta. Use o app para fazer suas previsões.","username":"Nome de usuário","balance":"Saldo atual","monthPoints":"Pontos do mês","coupons":"Total de bilhetes","won":"Ganhos","lost":"Perdidos","void":"Anulados","pending":"Pendentes","recent":"Últimos bilhetes","cols":["Data","Jogos","Odd total","Valor","Status","Retorno","Pontos"],"empty":"Ainda não há bilhetes.","download":"Baixar meus dados (JSON)","pendingDeletion":"Sua conta está em processo de exclusão. Ela será excluída definitivamente em {{date}}.","more":"Mostrar mais (20 bilhetes)","shown":"Mostrando {{shown}} de {{total}} bilhetes","tapHint":"Clique em um bilhete para ver os detalhes.","detailCols":["Jogo","Previsão","Odd","Resultado"],"statsTitle":"Minhas estatísticas","resultsChart":"Resultados dos bilhetes","loading":"Carregando os dados…","appNote":"Os mesmos dados da tela inicial do app. As análises de comportamento são atualizadas a cada 12 horas.","cancelDeletion":"Cancelar o pedido de exclusão","cancelled":"Seu pedido de exclusão foi cancelado."},"del":{"title":"Excluir conta","intro":"Você pode excluir sua conta WinwayStats no app (Configurações > Excluir conta) ou nesta página.","rules":["Depois do pedido, a conta fica em espera por 30 dias. Se você entrar no app nesse período, o pedido é cancelado.","Após 30 dias, sua conta e seus dados pessoais (nome, e-mail, telefone, data de nascimento, favoritos, usuários seguidos, votos em enquetes) são excluídos definitivamente.","Os registros de bilhetes e moedas virtuais não são apagados; o vínculo com a sua conta é removido e eles são usados apenas em estatísticas anônimas."],"confirm":"Quero que minha conta seja excluída.","button":"Enviar pedido de exclusão","done":"Recebemos seu pedido. Sua conta será excluída em {{date}}. Se você entrar no app antes disso, o pedido é cancelado.","already":"Sua conta já está em processo de exclusão ({{date}})."},"status":{"won":"Ganhou","lost":"Perdeu","void":"Anulado","pending":"Pendente"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>

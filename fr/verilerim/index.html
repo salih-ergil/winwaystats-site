@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mes données · WinwayStats</title>
+<meta name="description" content="WinwayStats : des prédictions de football sans argent réel et une prise de conscience de vos comportements.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/fr/verilerim">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/verilerim">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/verilerim">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/verilerim">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/verilerim">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/verilerim">
+<link rel="alternate" hreflang="fr" href="https://winwaystats.com/fr/verilerim">
+<link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/verilerim">
+<link rel="alternate" hreflang="it" href="https://winwaystats.com/it/verilerim">
+<link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/verilerim">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/fr"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/fr">Accueil</a><a href="/fr/yazilar">Articles</a><a href="/fr/verilerim" aria-current="page">Mes données</a><a href="/fr/hesap-silme">Supprimer le compte</a></nav>
+  <div class="langs"><a href="/verilerim" hreflang="tr">TR</a><a href="/en/verilerim" hreflang="en">EN</a><a href="/de/verilerim" hreflang="de">DE</a><a href="/ru/verilerim" hreflang="ru">RU</a><a href="/es/verilerim" hreflang="es">ES</a><a href="/fr/verilerim" hreflang="fr" aria-current="true">FR</a><a href="/pt/verilerim" hreflang="pt">PT</a><a href="/it/verilerim" hreflang="it">IT</a><a href="/pl/verilerim" hreflang="pl">PL</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Mes données</h1>
+<p class="muted">Consultez et téléchargez les informations liées à votre compte. Utilisez l'application pour faire vos prédictions.</p>
+<div id="login" hidden>
+<p class="muted">Connectez-vous avec le compte de l'application.</p>
+<form id="login-form">
+  <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+  <label>Mot de passe<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Se connecter</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <div class="account-bar"><b id="who"></b><button id="signout" class="secondary small" type="button">Se déconnecter</button></div>
+  <div id="d-deletion" class="notice" hidden><span id="d-deletion-text"></span> <button id="d-cancel" class="secondary" type="button">Annuler la demande de suppression</button></div>
+  <p id="d-loading" class="muted">Chargement des données…</p>
+  <div id="d-content" hidden>
+    <div class="stats"><div class="stat"><b id="d-balance">–</b><span>Solde actuel</span></div><div class="stat"><b id="d-points">–</b><span>Points du mois</span></div><div class="stat"><b id="d-coupons">–</b><span>Total des tickets</span></div><div class="stat"><b id="d-won">–</b><span>Gagnés</span></div><div class="stat"><b id="d-lost">–</b><span>Perdus</span></div><div class="stat"><b id="d-void">–</b><span>Remboursés</span></div><div class="stat"><b id="d-pending">–</b><span>En attente</span></div></div>
+    <p class="muted small">Les mêmes données que sur la page d'accueil de l'application. Les analyses de comportement sont mises à jour toutes les 12 heures.</p>
+    <section id="c-budget" class="card panel"></section>
+    <section id="c-decision" class="card panel"></section>
+    <section id="c-stats" class="card panel"></section>
+    <section id="c-points" class="card panel"></section>
+    <h2>Derniers tickets</h2>
+    <p id="d-empty" class="muted" hidden>Aucun ticket pour le moment.</p>
+    <p id="d-list-info" class="muted small"><span id="d-shown"></span> · Cliquez sur un ticket pour voir le détail.</p>
+    <div class="table-wrap"><table id="d-table"><thead><tr><th>Date</th><th>Matchs</th><th>Cote totale</th><th>Mise</th><th>Statut</th><th>Retour</th><th>Points</th></tr></thead><tbody id="d-rows"></tbody></table></div>
+    <div class="actions"><button id="d-more" class="secondary" type="button" hidden>Afficher plus (20 tickets)</button><button id="d-download" type="button">Télécharger mes données (JSON)</button></div>
+  </div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/fr/gizlilik">Politique de confidentialité</a><a href="/fr/kullanici-sozlesmesi">Conditions d'utilisation</a><a href="/fr/kvkk">Note d'information KVKK</a><a href="/fr/hakkimizda">À propos</a><a href="/fr/on-bilgilendirme">Formulaire d'information préalable</a><a href="/fr/mesafeli-satis">Contrat de vente à distance</a><a href="mailto:info@winway.com.tr">Contact: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"fr","page":"verilerim","s":{"login":{"email":"E-mail","password":"Mot de passe","signIn":"Se connecter","signOut":"Se déconnecter","intro":"Connectez-vous avec le compte de l'application.","invalid":"E-mail ou mot de passe incorrect.","notConfirmed":"Votre adresse e-mail n'est pas encore vérifiée. Connectez-vous à l'application pour la vérifier.","captcha":"La vérification anti-robot n'est pas terminée. Patientez un instant et réessayez.","generic":"Un problème est survenu. Veuillez réessayer."},"myData":{"title":"Mes données","intro":"Consultez et téléchargez les informations liées à votre compte. Utilisez l'application pour faire vos prédictions.","username":"Nom d'utilisateur","balance":"Solde actuel","monthPoints":"Points du mois","coupons":"Total des tickets","won":"Gagnés","lost":"Perdus","void":"Remboursés","pending":"En attente","recent":"Derniers tickets","cols":["Date","Matchs","Cote totale","Mise","Statut","Retour","Points"],"empty":"Aucun ticket pour le moment.","download":"Télécharger mes données (JSON)","pendingDeletion":"Votre compte est en cours de suppression. Il sera définitivement supprimé le {{date}}.","more":"Afficher plus (20 tickets)","shown":"{{shown}} tickets affichés sur {{total}}","tapHint":"Cliquez sur un ticket pour voir le détail.","detailCols":["Match","Prédiction","Cote","Résultat"],"statsTitle":"Mes statistiques","resultsChart":"Résultats des tickets","loading":"Chargement des données…","appNote":"Les mêmes données que sur la page d'accueil de l'application. Les analyses de comportement sont mises à jour toutes les 12 heures.","cancelDeletion":"Annuler la demande de suppression","cancelled":"Votre demande de suppression a été annulée."},"del":{"title":"Supprimer le compte","intro":"Vous pouvez supprimer votre compte WinwayStats dans l'application (Paramètres > Supprimer le compte) ou sur cette page.","rules":["Après la demande, le compte est mis en attente pendant 30 jours. Si vous vous connectez à l'application pendant ce délai, la demande est annulée.","Au bout de 30 jours, votre compte et vos données personnelles (nom, e-mail, téléphone, date de naissance, favoris, abonnements, votes aux sondages) sont définitivement supprimés.","Les enregistrements de tickets et de coins virtuels ne sont pas supprimés ; leur lien avec votre compte est retiré et ils ne servent qu’à des statistiques anonymes."],"confirm":"Je souhaite que mon compte soit supprimé.","button":"Envoyer la demande de suppression","done":"Votre demande a été reçue. Votre compte sera supprimé le {{date}}. Si vous vous connectez à l'application d'ici là, la demande est annulée.","already":"Votre compte est déjà en cours de suppression ({{date}})."},"status":{"won":"Gagné","lost":"Perdu","void":"Remboursé","pending":"En attente"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>

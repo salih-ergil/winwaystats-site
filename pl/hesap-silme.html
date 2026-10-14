@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usuń konto · WinwayStats</title>
+<meta name="description" content="WinwayStats: przewidywanie wyników meczów bez prawdziwych pieniędzy i świadomość własnych zachowań.">
+<meta name="theme-color" content="#1d211d">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/pl/hesap-silme">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/hesap-silme">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/hesap-silme">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/hesap-silme">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/hesap-silme">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/hesap-silme">
+<link rel="alternate" hreflang="fr" href="https://winwaystats.com/fr/hesap-silme">
+<link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/hesap-silme">
+<link rel="alternate" hreflang="it" href="https://winwaystats.com/it/hesap-silme">
+<link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/hesap-silme">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/pl"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/pl">Strona główna</a><a href="/pl/yazilar">Artykuły</a><a href="/pl/verilerim">Moje dane</a><a href="/pl/hesap-silme" aria-current="page">Usuń konto</a></nav>
+  <div class="langs"><a href="/hesap-silme" hreflang="tr">TR</a><a href="/en/hesap-silme" hreflang="en">EN</a><a href="/de/hesap-silme" hreflang="de">DE</a><a href="/ru/hesap-silme" hreflang="ru">RU</a><a href="/es/hesap-silme" hreflang="es">ES</a><a href="/fr/hesap-silme" hreflang="fr">FR</a><a href="/pt/hesap-silme" hreflang="pt">PT</a><a href="/it/hesap-silme" hreflang="it">IT</a><a href="/pl/hesap-silme" hreflang="pl" aria-current="true">PL</a></div>
+</div></header>
+<main><div class="wrap">
+<h1>Usuń konto</h1>
+<p>Konto WinwayStats możesz usunąć w aplikacji (Ustawienia &gt; Usuń konto) albo na tej stronie.</p>
+<ul><li>Po złożeniu wniosku konto oczekuje przez 30 dni. Jeśli w tym czasie zalogujesz się w aplikacji, wniosek zostanie anulowany.</li><li>Po 30 dniach Twoje konto i dane osobowe (imię i nazwisko, e-mail, telefon, data urodzenia, ulubione, obserwowani, głosy w ankietach) są trwale usuwane.</li><li>Zapisy kuponów i wirtualnych monet nie są usuwane; ich powiązanie z Twoim kontem zostaje usunięte i są wykorzystywane wyłącznie w anonimowych statystykach.</li></ul>
+<div id="login" hidden>
+<p class="muted">Zaloguj się kontem z aplikacji.</p>
+<form id="login-form">
+  <label>E-mail<input id="email" type="email" autocomplete="email" required></label>
+  <label>Hasło<input id="password" type="password" autocomplete="current-password" required></label>
+  <div id="captcha"></div>
+  <button id="login-btn" type="submit">Zaloguj się</button>
+  <div id="login-msg" class="msg"></div>
+</form>
+</div>
+<div id="account" hidden>
+  <div class="account-bar"><b id="who"></b><button id="signout" class="secondary small" type="button">Wyloguj się</button></div>
+  <form id="del-form">
+    <label style="display:flex;gap:10px;align-items:center;color:var(--text)"><input id="del-confirm" type="checkbox" style="width:20px;height:20px"> Chcę, aby moje konto zostało usunięte.</label>
+    <button id="del-btn" class="danger" type="submit" disabled>Wyślij wniosek o usunięcie</button>
+  </form>
+  <div id="del-msg" class="msg"></div>
+</div>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/pl/gizlilik">Polityka prywatności</a><a href="/pl/kullanici-sozlesmesi">Regulamin</a><a href="/pl/kvkk">Klauzula informacyjna KVKK</a><a href="/pl/hakkimizda">O nas</a><a href="/pl/on-bilgilendirme">Formularz informacji przedumownych</a><a href="/pl/mesafeli-satis">Umowa sprzedaży na odległość</a><a href="mailto:info@winway.com.tr">Kontakt: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<script>window.WW = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"pl","page":"hesap-silme","s":{"login":{"email":"E-mail","password":"Hasło","signIn":"Zaloguj się","signOut":"Wyloguj się","intro":"Zaloguj się kontem z aplikacji.","invalid":"Nieprawidłowy e-mail lub hasło.","notConfirmed":"Twój adres e-mail nie został jeszcze potwierdzony. Zaloguj się w aplikacji, aby go potwierdzić.","captcha":"Weryfikacja antybotowa nie została ukończona. Poczekaj chwilę i spróbuj ponownie.","generic":"Wystąpił problem. Spróbuj ponownie."},"myData":{"title":"Moje dane","intro":"Zobacz i pobierz informacje związane z Twoim kontem. Do przewidywania wyników użyj aplikacji.","username":"Nazwa użytkownika","balance":"Obecne saldo","monthPoints":"Punkty w tym miesiącu","coupons":"Łącznie kuponów","won":"Wygrane","lost":"Przegrane","void":"Zwroty","pending":"Oczekujące","recent":"Ostatnie kupony","cols":["Data","Mecze","Kurs łączny","Stawka","Status","Zwrot","Punkty"],"empty":"Nie ma jeszcze kuponów.","download":"Pobierz moje dane (JSON)","pendingDeletion":"Twoje konto jest w trakcie usuwania. Zostanie trwale usunięte {{date}}.","more":"Pokaż więcej (20 kuponów)","shown":"Wyświetlono {{shown}} z {{total}} kuponów","tapHint":"Kliknij kupon, aby zobaczyć szczegóły.","detailCols":["Mecz","Typ","Kurs","Wynik"],"statsTitle":"Moje statystyki","resultsChart":"Wyniki kuponów","loading":"Wczytywanie danych…","appNote":"Te same dane co na stronie głównej aplikacji. Analizy zachowań są aktualizowane co 12 godzin.","cancelDeletion":"Anuluj wniosek o usunięcie","cancelled":"Twój wniosek o usunięcie został anulowany."},"del":{"title":"Usuń konto","intro":"Konto WinwayStats możesz usunąć w aplikacji (Ustawienia > Usuń konto) albo na tej stronie.","rules":["Po złożeniu wniosku konto oczekuje przez 30 dni. Jeśli w tym czasie zalogujesz się w aplikacji, wniosek zostanie anulowany.","Po 30 dniach Twoje konto i dane osobowe (imię i nazwisko, e-mail, telefon, data urodzenia, ulubione, obserwowani, głosy w ankietach) są trwale usuwane.","Zapisy kuponów i wirtualnych monet nie są usuwane; ich powiązanie z Twoim kontem zostaje usunięte i są wykorzystywane wyłącznie w anonimowych statystykach."],"confirm":"Chcę, aby moje konto zostało usunięte.","button":"Wyślij wniosek o usunięcie","done":"Otrzymaliśmy Twój wniosek. Konto zostanie usunięte {{date}}. Jeśli zalogujesz się w aplikacji przed tą datą, wniosek zostanie anulowany.","already":"Twoje konto jest już w trakcie usuwania ({{date}})."},"status":{"won":"Wygrany","lost":"Przegrany","void":"Zwrot","pending":"Oczekuje"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onTurnstileLoad" async defer></script>
+<script type="module" src="/hesap.js"></script>
+</body>
+</html>

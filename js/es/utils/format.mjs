@@ -10,6 +10,10 @@ const SEPARATORS = {
     es: { group: '.', decimal: ',' },
     en: { group: ',', decimal: '.' },
     ru: { group: '\u00a0', decimal: ',' },
+    fr: { group: '\u00a0', decimal: ',' }, // Fransızcanın dar boşluğu (U+202F) yazı tipinde yok
+    pt: { group: '.', decimal: ',' },
+    it: { group: '.', decimal: ',' },
+    pl: { group: '\u00a0', decimal: ',' },
 };
 /**
  * Sayıları uygulama dilinin biçiminde yazar (Türkçe: binlik nokta, ondalık virgül).
@@ -28,7 +32,7 @@ export function formatNumber(value, decimals = 2, language = numberLanguage) {
  */
 export function formatPercent(value, decimals = 0, sign = 'auto') {
     const n = formatNumber(Math.abs(value), decimals);
-    const body = numberLanguage === 'tr' ? `%${n}` : numberLanguage === 'de' || numberLanguage === 'es' ? `${n}\u00a0%` : `${n}%`;
+    const body = numberLanguage === 'tr' ? `%${n}` : numberLanguage === 'de' || numberLanguage === 'es' || numberLanguage === 'fr' || numberLanguage === 'it' || numberLanguage === 'pl' ? `${n}\u00a0%` : `${n}%`;
     const prefix = sign === 'none' || value === 0 ? '' : value < 0 ? '−' : sign === 'always' ? '+' : '';
     return `${prefix}${body}`;
 }

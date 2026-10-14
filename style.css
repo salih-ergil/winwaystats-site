@@ -29,7 +29,7 @@ header.site .wrap { display: flex; align-items: center; justify-content: space-b
 nav.main { display: flex; gap: 16px; flex-wrap: wrap; font-size: 15px; }
 nav.main a { color: var(--muted); text-decoration: none; }
 nav.main a:hover, nav.main a[aria-current='page'] { color: var(--text); }
-.langs { display: flex; gap: 6px; font-size: 13px; }
+.langs { display: flex; flex-wrap: wrap; gap: 4px; font-size: 13px; }
 .langs a { color: var(--muted); text-decoration: none; padding: 2px 6px; border-radius: 6px; border: 1px solid transparent; }
 .langs a[aria-current='true'] { color: var(--text); border-color: var(--border); }
 main { padding: 32px 0 56px; }

@@ -85,8 +85,8 @@ export function baselineStatus(b, dateText) {
         return fill(T.baseline.notEnough, { min: BASELINE_MIN_COUPONS });
     return null;
 }
-/** "Salı, Çarşamba ve Perşembe" */
-export const joinTr = (xs) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ve ${xs[xs.length - 1]}`);
+/** "Salı, Çarşamba ve Perşembe" (bağlaç uygulama dilinde) */
+export const joinTr = (xs) => (xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} ${T.common.and} ${xs[xs.length - 1]}`);
 /**
  * Bakiye oranı genel değerden anlamlı farklı olan günler ve saatler; her biri için yüksek ve düşük ayrı cümle.
  * Örnek: "Cumartesi (%2,0) günleri kupon başına kullandığınız bakiye oranı genel değerinizden yüksek (genel %1,6)."
