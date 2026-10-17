@@ -346,7 +346,8 @@ export function myStats(history, now) {
     const c = history.coupons;
     const settled = c.filter((x) => x.status !== 'pending');
     const decided = settled.filter((x) => x.status !== 'void');
-    const won = c.filter((x) => x.status === 'won').length;
+    const wonList = c.filter((x) => x.status === 'won');
+    const won = wonList.length;
     const staked = settled.reduce((s, x) => s + x.stake, 0);
     const returned = settled.reduce((s, x) => s + x.payout, 0);
     const b = balanceView(history.ledger, now, history.coupons);
@@ -356,7 +357,8 @@ export function myStats(history, now) {
         lost: c.filter((x) => x.status === 'lost').length,
         void: c.filter((x) => x.status === 'void').length,
         winRate: decided.length ? Math.round((won / decided.length) * 100) : null,
-        avgOdds: decided.length ? Math.round((decided.reduce((s, x) => s + x.totalOdds, 0) / decided.length) * 100) / 100 : null,
+        // Ortalama oran: sadece kazanan kuponlar (Salih, 2026-10-17; profil ve sıralamayla aynı)
+        avgOdds: wonList.length ? Math.round((wonList.reduce((s, x) => s + x.totalOdds, 0) / wonList.length) * 100) / 100 : null,
         roi: staked ? Math.round(((returned - staked) / staked) * 1000) / 10 : null,
         net: Math.round((b.current - b.start) * 100) / 100,
     };
