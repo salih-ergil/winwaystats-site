@@ -94,6 +94,10 @@ const TR = {
     // ——— Anasayfa ve profil kartları ———
     cards: {
         budgetTitle: 'Bütçe Kontrolü',
+        budgetPointsTitle: 'Bütçe & Puan Kontrol',
+        monthPoints: 'Bu ayın puanı',
+        totalPoints: 'Toplam puan',
+        totalPointsNote: 'Toplam puan: şartları sağlayan ayların biriken puanı (ay sonu bakiyesi en az 40.000 ₵ ve en az 100 puan).',
         budgetOpen: 'Ayrıntılar',
         decisionTitle: 'Karar Analizi',
         decisionOpen: 'Gün, saat ve seri ayrıntıları',
@@ -211,6 +215,10 @@ const EN = {
     },
     cards: {
         budgetTitle: 'Budget Check',
+        budgetPointsTitle: 'Budget & Points Check',
+        monthPoints: 'Points this month',
+        totalPoints: 'Total points',
+        totalPointsNote: 'Total points: saved points from months that met the conditions (month-end balance at least ₵40,000 and at least 100 points).',
         budgetOpen: 'Details',
         decisionTitle: 'Decision Analysis',
         decisionOpen: 'Day, time and streak details',
@@ -325,6 +333,10 @@ const DE = {
     },
     cards: {
         budgetTitle: 'Budgetkontrolle',
+        budgetPointsTitle: 'Budget- & Punktekontrolle',
+        monthPoints: 'Punkte diesen Monat',
+        totalPoints: 'Punkte gesamt',
+        totalPointsNote: 'Punkte gesamt: gesammelte Punkte aus Monaten, die die Bedingungen erfüllt haben (Guthaben am Monatsende mindestens ₵40.000 und mindestens 100 Punkte).',
         budgetOpen: 'Details',
         decisionTitle: 'Entscheidungsanalyse',
         decisionOpen: 'Details zu Tagen, Uhrzeiten und Serien',
@@ -439,6 +451,10 @@ const RU = {
     },
     cards: {
         budgetTitle: 'Контроль бюджета',
+        budgetPointsTitle: 'Контроль бюджета и очков',
+        monthPoints: 'Очки за месяц',
+        totalPoints: 'Всего очков',
+        totalPointsNote: 'Всего очков: накопленные очки за месяцы, где выполнены условия (баланс на конец месяца не менее ₵40 000 и не менее 100 очков).',
         budgetOpen: 'Подробнее',
         decisionTitle: 'Анализ решений',
         decisionOpen: 'Дни, часы и серии подробно',
@@ -553,6 +569,10 @@ const ES = {
     },
     cards: {
         budgetTitle: 'Control del presupuesto',
+        budgetPointsTitle: 'Control de presupuesto y puntos',
+        monthPoints: 'Puntos de este mes',
+        totalPoints: 'Puntos totales',
+        totalPointsNote: 'Puntos totales: puntos acumulados de los meses que cumplieron las condiciones (saldo a fin de mes de al menos ₵40.000 y al menos 100 puntos).',
         budgetOpen: 'Detalles',
         decisionTitle: 'Análisis de decisiones',
         decisionOpen: 'Detalles de días, horas y rachas',
@@ -668,6 +688,10 @@ const FR = {
     },
     cards: {
         budgetTitle: 'Contrôle du budget',
+        budgetPointsTitle: 'Contrôle du budget et des points',
+        monthPoints: 'Points ce mois-ci',
+        totalPoints: 'Points au total',
+        totalPointsNote: 'Points au total : points cumulés des mois qui ont rempli les conditions (solde de fin de mois d’au moins ₵40 000 et au moins 100 points).',
         budgetOpen: 'Détails',
         decisionTitle: 'Analyse des décisions',
         decisionOpen: 'Détails par jour, heure et série',
@@ -782,6 +806,10 @@ const PT = {
     },
     cards: {
         budgetTitle: 'Controle do orçamento',
+        budgetPointsTitle: 'Controle de orçamento e pontos',
+        monthPoints: 'Pontos deste mês',
+        totalPoints: 'Pontos totais',
+        totalPointsNote: 'Pontos totais: pontos acumulados dos meses que cumpriram as condições (saldo no fim do mês de pelo menos ₵40.000 e pelo menos 100 pontos).',
         budgetOpen: 'Detalhes',
         decisionTitle: 'Análise de decisões',
         decisionOpen: 'Detalhes por dia, horário e sequência',
@@ -896,6 +924,10 @@ const IT = {
     },
     cards: {
         budgetTitle: 'Controllo del budget',
+        budgetPointsTitle: 'Controllo budget e punti',
+        monthPoints: 'Punti di questo mese',
+        totalPoints: 'Punti totali',
+        totalPointsNote: 'Punti totali: punti accumulati dei mesi che hanno rispettato le condizioni (saldo a fine mese di almeno ₵40.000 e almeno 100 punti).',
         budgetOpen: 'Dettagli',
         decisionTitle: 'Analisi delle decisioni',
         decisionOpen: 'Dettagli per giorno, orario e serie',
@@ -1010,6 +1042,10 @@ const PL = {
     },
     cards: {
         budgetTitle: 'Kontrola budżetu',
+        budgetPointsTitle: 'Kontrola budżetu i punktów',
+        monthPoints: 'Punkty w tym miesiącu',
+        totalPoints: 'Punkty łącznie',
+        totalPointsNote: 'Punkty łącznie: zebrane punkty z miesięcy, które spełniły warunki (saldo na koniec miesiąca co najmniej ₵40 000 i co najmniej 100 punktów).',
         budgetOpen: 'Szczegóły',
         decisionTitle: 'Analiza decyzji',
         decisionOpen: 'Szczegóły dni, godzin i serii',

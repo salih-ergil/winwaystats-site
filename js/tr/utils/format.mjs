@@ -44,10 +44,12 @@ export function formatCoin(value) {
 export function formatOdds(value) {
     return value.toFixed(2);
 }
-/** Kısa sayı (sıralama tablosu): 12.000 → "12K", -9.990 → "-9,99K", 84,9 → "84,9" */
+/** Kısa sayı (sıralama tablosu): 2.345.678 → "2,35M" (Salih, 2026-10-21), 12.000 → "12K", -9.990 → "-9,99K", 84,9 → "84,9" */
 export function formatCompact(value) {
     const { decimal } = SEPARATORS[numberLanguage];
     const trim = (s) => (s.includes(decimal) ? s.replace(/0+$/, '').replace(new RegExp(`\\${decimal}$`), '') : s);
+    if (Math.abs(value) >= 999995)
+        return `${trim(formatNumber(value / 1000000, 2))}M`;
     if (Math.abs(value) >= 1000)
         return `${trim(formatNumber(value / 1000, 2))}K`;
     return trim(formatNumber(value, 2)) || '0';
