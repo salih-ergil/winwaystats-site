@@ -94,6 +94,8 @@ const TR = {
     // ——— Anasayfa ve profil kartları ———
     cards: {
         budgetTitle: 'Bütçe Kontrolü',
+        freeSummaryTitle: 'Haftanın özeti',
+        freeSummaryText: 'Bu hafta {count} kupon yaptın, bakiyen {change} değişti.',
         budgetPointsTitle: 'Bütçe & Puan Kontrol',
         monthPoints: 'Bu ayın puanı',
         totalPoints: 'Toplam puan',
@@ -215,6 +217,8 @@ const EN = {
     },
     cards: {
         budgetTitle: 'Budget Check',
+        freeSummaryTitle: 'This week',
+        freeSummaryText: 'This week you made {count} slips and your balance changed by {change}.',
         budgetPointsTitle: 'Budget & Points Check',
         monthPoints: 'Points this month',
         totalPoints: 'Total points',
@@ -333,6 +337,8 @@ const DE = {
     },
     cards: {
         budgetTitle: 'Budgetkontrolle',
+        freeSummaryTitle: 'Deine Woche',
+        freeSummaryText: 'Diese Woche hast du {count} Scheine gespielt, dein Guthaben hat sich um {change} verändert.',
         budgetPointsTitle: 'Budget- & Punktekontrolle',
         monthPoints: 'Punkte diesen Monat',
         totalPoints: 'Punkte gesamt',
@@ -451,6 +457,8 @@ const RU = {
     },
     cards: {
         budgetTitle: 'Контроль бюджета',
+        freeSummaryTitle: 'Твоя неделя',
+        freeSummaryText: 'На этой неделе ты сделал(а) купонов: {count}, баланс изменился на {change}.',
         budgetPointsTitle: 'Контроль бюджета и очков',
         monthPoints: 'Очки за месяц',
         totalPoints: 'Всего очков',
@@ -569,6 +577,8 @@ const ES = {
     },
     cards: {
         budgetTitle: 'Control del presupuesto',
+        freeSummaryTitle: 'Tu semana',
+        freeSummaryText: 'Esta semana hiciste {count} cupones y tu saldo cambió {change}.',
         budgetPointsTitle: 'Control de presupuesto y puntos',
         monthPoints: 'Puntos de este mes',
         totalPoints: 'Puntos totales',
@@ -688,6 +698,8 @@ const FR = {
     },
     cards: {
         budgetTitle: 'Contrôle du budget',
+        freeSummaryTitle: 'Ta semaine',
+        freeSummaryText: 'Cette semaine, tu as fait {count} coupons et ton solde a changé de {change}.',
         budgetPointsTitle: 'Contrôle du budget et des points',
         monthPoints: 'Points ce mois-ci',
         totalPoints: 'Points au total',
@@ -806,6 +818,8 @@ const PT = {
     },
     cards: {
         budgetTitle: 'Controle do orçamento',
+        freeSummaryTitle: 'Sua semana',
+        freeSummaryText: 'Nesta semana você fez {count} cupons e seu saldo mudou {change}.',
         budgetPointsTitle: 'Controle de orçamento e pontos',
         monthPoints: 'Pontos deste mês',
         totalPoints: 'Pontos totais',
@@ -924,6 +938,8 @@ const IT = {
     },
     cards: {
         budgetTitle: 'Controllo del budget',
+        freeSummaryTitle: 'La tua settimana',
+        freeSummaryText: 'Questa settimana hai fatto {count} schedine e il tuo saldo è cambiato di {change}.',
         budgetPointsTitle: 'Controllo budget e punti',
         monthPoints: 'Punti di questo mese',
         totalPoints: 'Punti totali',
@@ -1042,6 +1058,8 @@ const PL = {
     },
     cards: {
         budgetTitle: 'Kontrola budżetu',
+        freeSummaryTitle: 'Twój tydzień',
+        freeSummaryText: 'W tym tygodniu zrobiłeś(-aś) {count} kuponów, saldo zmieniło się o {change}.',
         budgetPointsTitle: 'Kontrola budżetu i punktów',
         monthPoints: 'Punkty w tym miesiącu',
         totalPoints: 'Punkty łącznie',

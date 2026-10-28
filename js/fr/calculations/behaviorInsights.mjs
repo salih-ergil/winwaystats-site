@@ -237,17 +237,18 @@ export function weekly(facts, patterns, now) {
 }
 function metricsOf(facts, all, days) {
     const decided = facts.filter((f) => f.status !== 'void');
-    // Kayıptan sonra bir sonraki kupona kadar geçen süre (saat): kaybeden kuponun ardından oynanan ilk kupon (tüm geçmişten)
+    // Kayıptan sonra bir sonraki kupona kadar geçen süre (saat): kayıp BELLİ OLDUKTAN (sonuçlanma) sonra oynanan ilk kupon,
+    // tüm geçmişten; ortanca (2026-10-22: oynanma anından ölçülüyor ve ortalama alınıyordu, art arda kuponlarda "5 dk" çıkıyordu)
     const gaps = [];
     for (const f of decided.filter((x) => x.status === 'lost')) {
-        const next = all.find((x) => x.at > f.at);
+        const next = all.find((x) => x.at > f.settledAt);
         if (next)
-            gaps.push((next.at - f.at) / HOUR);
+            gaps.push((next.at - f.settledAt) / HOUR);
     }
     return {
         avgRatio: mean(decided.map((f) => f.ratio)),
         weeklyCoupons: facts.length ? (facts.length / days) * 7 : null,
-        gapAfterLoss: mean(gaps),
+        gapAfterLoss: median(gaps),
         avgMatches: mean(facts.map((f) => f.matches)),
         avgOdds: mean(decided.map((f) => f.totalOdds)),
     };
