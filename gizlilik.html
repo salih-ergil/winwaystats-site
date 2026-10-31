@@ -68,7 +68,7 @@
 <p class="item">• Onay kayıtları (sözleşme onayı ve 18 yaş beyanı, tarih ve saatiyle): Onayların verildiğinin ispatı.</p>
 <p class="item">• Teknik veriler (IP adresi, cihaz ve oturum bilgileri, giriş kayıtları): Hesap ve sistem güvenliği, hile tespiti, mevzuattan doğan kayıt yükümlülükleri.</p>
 <p class="item">• Uygulama hata kayıtları (hatanın türü ve kodda oluştuğu yer, uygulama sürümü, cihaz modeli ve işletim sistemi): Uygulamadaki hataların bulunup giderilmesi. Hesapla ilişkilendirilmez; ad, e-posta ve kupon içeriği içermez.</p>
-<p class="item">• Kullanım istatistikleri (açılan ekranlar ve ekranlarda geçen süre, uygulamanın açılıp kapanması, cihaz modeli, işletim sistemi, uygulama sürümü, dil, IP adresinden çıkarılan yaklaşık ülke ve şehir, hesap kimliği): Uygulamanın hangi bölümlerinin nasıl kullanıldığını görerek geliştirilmesi. Ad, e-posta, telefon ve kupon içeriği gönderilmez; ekran kaydı alınmaz.</p>
+<p class="item">• Kullanım istatistikleri (açılan ekranlar ve ekranlarda geçen süre, ekranlarda yapılan işlemler (dokunulan sekme, kart ve düğmeler; arama, kupon oluşturma, yorum, takip ve satın alma gibi işlemlerin yapıldığı bilgisi; içerik, metin ve tutar olmadan), uygulamanın açılıp kapanması, cihaz modeli, işletim sistemi, uygulama sürümü, dil, IP adresinden çıkarılan yaklaşık ülke ve şehir, hesap kimliği): Uygulamanın hangi bölümlerinin nasıl kullanıldığını görerek geliştirilmesi. Ad, e-posta, telefon ve kupon içeriği gönderilmez; ekran kaydı alınmaz.</p>
 <p class="item">• Robot doğrulaması (kayıt, giriş ve şifre işlemlerinde; IP adresi ve tarayıcı / cihaz sinyalleri): Toplu sahte hesap açılmasının ve otomatik saldırıların önlenmesi. Doğrulamayı Cloudflare yapar; WinwayStats bu bilgileri saklamaz.</p>
 <p class="item">• Dil ve görünüm tercihi: Görünüm yalnızca cihazda saklanır. Dil cihazda ve hesapla birlikte saklanır; uygulamanın, bildirimlerin ve e-postaların seçilen dilde gösterilmesi için kullanılır.</p>
 <p>Özel nitelikli kişisel veri (sağlık, biyometrik veri vb.), kimlik numarası, kart bilgisi ve adres toplanmaz.</p>
@@ -96,7 +96,7 @@
 <h2>6. Çerezler ve Yerel Depolama</h2>
 <p>Uygulamada ve web sürümünde reklam ve takip çerezi kullanılmaz.</p>
 <p>Web sürümünde oturum bilgisi ve tercihler tarayıcının yerel depolamasında tutulur; bunlar Uygulama'nın çalışması için zorunludur.</p>
-<p>Uygulama hataları ve hangi ekranların ne kadar kullanıldığı PostHog ile ölçülür. Ad, e-posta, telefon ve kupon içeriği gönderilmez; oturum kaydı (ekran videosu) alınmaz.</p>
+<p>Uygulama hataları ve hangi ekranların ne kadar kullanıldığı PostHog ile ölçülür. Ad, e-posta, telefon ve kupon içeriği gönderilmez; oturum kaydı (ekran videosu) alınmaz. Ekranlarda yapılan işlemler (ör. sekme seçimi, kupon oluşturma, yorum) içerikleri olmadan, sadece yapıldıkları bilgisiyle sayılır.</p>
 <p>Kayıt, giriş ve şifre işlemlerinde Cloudflare Turnstile robot doğrulaması kullanılır.</p>
 <h2>7. Hesap Silme</h2>
 <p>Kullanıcı hesabını Uygulama'dan (Ayarlar) ya da winwaystats.com sitesindeki Hesap Silme sayfasından silebilir.</p>
