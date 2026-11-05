@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WinwayStats hesabı aç · WinwayStats</title>
+<meta name="description" content="WinwayStats: gerçek para olmadan futbol tahmini ve davranış farkındalığı.">
+<meta name="theme-color" content="#1d211d">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/kayit">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/kayit">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/kayit">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/kayit">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/kayit">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/kayit">
+<link rel="alternate" hreflang="fr" href="https://winwaystats.com/fr/kayit">
+<link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/kayit">
+<link rel="alternate" hreflang="it" href="https://winwaystats.com/it/kayit">
+<link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/kayit">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/">Anasayfa</a><a href="/yazilar">Yazılar</a><a href="/verilerim">Verilerim</a><a href="/hesap-silme">Hesap Silme</a></nav>
+  <div class="langs"><a href="/kayit" hreflang="tr" aria-current="true">TR</a><a href="/en/kayit" hreflang="en">EN</a><a href="/de/kayit" hreflang="de">DE</a><a href="/ru/kayit" hreflang="ru">RU</a><a href="/es/kayit" hreflang="es">ES</a><a href="/fr/kayit" hreflang="fr">FR</a><a href="/pt/kayit" hreflang="pt">PT</a><a href="/it/kayit" hreflang="it">IT</a><a href="/pl/kayit" hreflang="pl">PL</a></div>
+</div></header>
+<main><div class="wrap">
+<section id="step-form">
+<h1>WinwayStats hesabı aç</h1>
+<p class="muted">Hesabını burada aç, sonra WinwayStats uygulamasını indirip aynı e-posta ve şifreyle giriş yap. Gerçek para yok; coin satın alınamaz.</p>
+<form id="signup-form" novalidate>
+  <label>Kullanıcı adı<input name="username" autocomplete="username" maxlength="20" required><span class="msg error" data-err="username"></span></label>
+  <label>E-posta<input name="email" type="email" autocomplete="email" required><span class="msg error" data-err="email"></span></label>
+  <label>Şifre<span class="k-pass"><input name="password" type="password" autocomplete="new-password" required><button type="button" class="secondary small" id="pass-toggle">Göster</button></span><span class="muted small">En az 8 karakter; küçük harf, büyük harf, rakam ve sembol.</span><span class="msg error" data-err="password"></span></label>
+  <label>Ad soyad<input name="full_name" autocomplete="name" required><span class="msg error" data-err="full_name"></span></label>
+  <label>Telefon<span class="k-phone"><span id="pk-dial" class="k-dial"></span><input name="phone" type="tel" autocomplete="tel-national" placeholder="5xx xxx xx xx" required></span><span class="msg error" data-err="phone"></span></label>
+  <label>Doğum tarihi<input name="birth_date" type="date" required><span class="msg error" data-err="birth_date"></span></label>
+  <div class="k-field"><span class="k-lab">Yaşadığın ülke (isteğe bağlı)</span><div id="pk-country"></div></div>
+  <div class="k-field"><span class="k-lab">Yaşadığın şehir (isteğe bağlı)</span><div id="pk-city"></div></div>
+  <label>Partner kodu (varsa)<input name="partner_code" autocapitalize="characters" maxlength="12"><span class="msg" id="code-msg"></span></label>
+  <label class="k-check"><input type="checkbox" name="adult"> <span>18 yaşından büyüğüm.</span></label><span class="msg error" data-err="adult"></span>
+  <label class="k-check"><input type="checkbox" name="terms"> <span><a href="/kullanici-sozlesmesi" target="_blank" rel="noopener">Kullanıcı Sözleşmesi</a>'ni kabul ettiğimi; <a href="/gizlilik" target="_blank" rel="noopener">Gizlilik Politikası</a> ve <a href="/kvkk" target="_blank" rel="noopener">KVKK Aydınlatma Metni</a>'ni okuduğumu onaylıyorum.</span></label><span class="msg error" data-err="terms"></span>
+  <div id="captcha"></div>
+  <button type="submit">Hesabımı aç</button>
+  <div class="msg" id="form-msg"></div>
+</form>
+<p class="muted small">Şehir listesi: <a href="https://www.geonames.org" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0).</p>
+</section>
+<section id="step-otp" hidden>
+<h1>E-postanı doğrula</h1>
+<p class="muted"><b id="otp-email"></b> adresine 6 haneli bir kod gönderdik. Kod 1 saat geçerli.</p>
+<form id="otp-form">
+  <label>Doğrulama kodu<input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+  <button type="submit">Doğrula</button>
+  <button type="button" class="secondary" id="resend">Kodu yeniden gönder</button>
+  <div class="msg" id="otp-msg"></div>
+</form>
+</section>
+<section id="step-done" hidden>
+<h1>Hesabın hazır</h1>
+<p>Şimdi WinwayStats uygulamasını indir ve bu e-posta ve şifreyle giriş yap.</p>
+<p class="notice" id="done-linked" hidden>Partner kodun hesabına işlendi.</p>
+<div class="k-stores"><a class="k-store" href="https://play.google.com/store/apps/details?id=com.winwaystats.app" rel="noopener">Google Play'den indir</a><span class="k-store off">App Store (yakında)</span></div>
+</section>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/gizlilik">Gizlilik Politikası</a><a href="/kullanici-sozlesmesi">Kullanıcı Sözleşmesi</a><a href="/kvkk">KVKK Aydınlatma Metni</a><a href="/hakkimizda">Hakkımızda</a><a href="/on-bilgilendirme">Ön Bilgilendirme Formu</a><a href="/mesafeli-satis">Mesafeli Satış Sözleşmesi</a><a href="mailto:info@winway.com.tr">İletişim: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<style>.k-phone,.k-pass{display:flex;gap:8px}.k-dial{width:132px;flex:none}.k-field{display:grid;gap:6px}.k-lab{font-size:14px;color:var(--muted)}.k-pass input{flex:1}.k-phone select{width:96px;flex:none}.k-phone input{flex:1;min-width:0}.k-check{display:flex!important;flex-direction:row;gap:10px;align-items:flex-start;color:var(--text)!important}.k-check input{width:20px;height:20px;flex:none;margin-top:2px}.msg.ok{color:var(--green)}label .msg{font-size:13px}.k-stores{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.k-store{background:var(--green);color:var(--on-green);text-decoration:none;font-weight:700;padding:12px 16px;border-radius:10px}.k-store.off{background:var(--surface);color:var(--muted);border:1px solid var(--border)}#signup-form select{-webkit-appearance:none;appearance:none;width:100%;min-height:48px;box-sizing:border-box;background:var(--surface) no-repeat right 12px center/12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23a0a6a0' stroke-width='2'/%3E%3C/svg%3E");border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 32px 12px 12px;font-size:16px}#signup-form input:not([type=checkbox]){width:100%;box-sizing:border-box;min-width:0}#signup-form .k-phone select{width:104px;flex:none}#signup-form .k-phone input{flex:1}</style>
+<script>window.WWK = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","s":{"title":"WinwayStats hesabı aç","intro":"Hesabını burada aç, sonra WinwayStats uygulamasını indirip aynı e-posta ve şifreyle giriş yap. Gerçek para yok; coin satın alınamaz.","codeOk":"Partner kodu geçerli.","codeBad":"Bu partner kodu bulunamadı. Kontrol et ya da boş bırak.","resent":"Yeni kod gönderildi.","err":{"username":"Kullanıcı adı 3–20 karakter olmalı; harf, rakam, _ ve . kullanılabilir.","reserved":"Bu kullanıcı adı alınamaz.","usernameTaken":"Bu kullanıcı adı kullanılıyor.","fullName":"Ad ve soyadını yaz.","email":"Geçerli bir e-posta adresi yaz.","password":"Şifre en az 8 karakter olmalı; küçük harf, büyük harf, rakam ve sembol içermeli.","password2":"Şifreler aynı değil.","phone":"Telefon numarası geçerli değil.","birth":"Doğum tarihini seç.","minor":"WinwayStats'a 18 yaşından büyükler katılabilir.","adult":"18 yaşından büyük olduğunu onayla.","terms":"Sözleşmeleri onayla.","captchaWait":"Robot doğrulamasının tamamlanmasını bekle.","captcha":"Robot doğrulaması başarısız; sayfayı yenileyip tekrar dene.","exists":"Bu e-posta adresiyle zaten bir hesap var. Uygulamada giriş yapabilirsin.","disposable":"Geçici e-posta adresiyle kayıt olunamaz; kalıcı bir adres kullan.","otp":"Kod 6 rakam olmalı.","otpBad":"Kod hatalı ya da süresi geçti.","generic":"Bir sorun oluştu; tekrar dene."}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script type="module" src="/kayit.js?v=64a59f1684"></script>
+</body>
+</html>
