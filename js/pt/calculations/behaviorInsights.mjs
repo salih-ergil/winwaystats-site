@@ -140,6 +140,23 @@ export function couponFacts(history, leagueOf = () => undefined) {
         .sort((a, b) => a.at - b.at);
 }
 /**
+ * Bütün kuponların (açık dahil) bakiye payı: tutar / kuponun oluşturulduğu andaki bakiye. couponFacts ile aynı bölen
+ * (kupon düşülmeden önceki bakiye + o an açık kupon tutarları); açık kuponlar da oluşturulunca ölçülebilir.
+ */
+export function couponShares(history) {
+    const stakeBalance = new Map();
+    for (const e of history.ledger)
+        if (e.type === 'stake' && e.couponId)
+            stakeBalance.set(e.couponId, e.balanceAfter + Math.abs(e.amount));
+    const ledger = [...history.ledger].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const spans = couponSpans(history);
+    return new Map(history.coupons.map((c) => {
+        const at = Date.parse(c.createdAt);
+        const before = (stakeBalance.get(c.id) ?? balanceAt(ledger, at - 1)) + openStakeAt(spans, at, grantBefore(ledger, at), c.id);
+        return [c.id, before > 0 ? Math.min(1, c.stake / before) : 1];
+    }));
+}
+/**
  * [until − 28 gün, until) aralığındaki kuponlardan medyanlar.
  * gapHours: bir kuponun sonuçlanmasından sonra oynanan ilk kupona kadar geçen süre (seri sonrası süreyle aynı ölçü).
  * perDay: kupon oynanan günlerdeki günlük kupon sayısının medyanı.

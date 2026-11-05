@@ -14,13 +14,13 @@ const TR = {
         winStreak: 'Art arda {count} kuponunuz kazandı.',
         returnPerception: 'Son {wins} kuponunuz kazandı. Son 7 kuponun toplamında bakiyeniz {net} coin {direction} durumda.',
         /** Seriyi tamamlayan kupon sonuçlandıktan sonra oynanan ilk 3 kuponda değişen gösterge (anlamlı değişim) */
-        afterRatioUp: 'Bu {event} ardından kupon başına kullandığınız bakiye oranı arttı (%{after}, referansınız %{reference}).',
-        afterRatioDown: 'Bu {event} ardından kupon başına kullandığınız bakiye oranı azaldı (%{after}, referansınız %{reference}).',
+        afterRatioUp: 'Bu {event} ardından kupon başına kullandığınız bakiye payı arttı (%{after}, referansınız %{reference}).',
+        afterRatioDown: 'Bu {event} ardından kupon başına kullandığınız bakiye payı azaldı (%{after}, referansınız %{reference}).',
         afterGapShorter: 'Bu {event} ardından yeni kupona kadar geçen süre kısaldı ({after}, referansınız {reference}).',
         afterGapLonger: 'Bu {event} ardından yeni kupona kadar geçen süre uzadı ({after}, referansınız {reference}).',
         afterFrequencyUp: 'Bu {event} ardından 24 saatteki kupon sayınız arttı ({after}, referansınız {reference}).',
         afterFrequencyDown: 'Bu {event} ardından 24 saatteki kupon sayınız azaldı ({after}, referansınız {reference}).',
-        afterSteady: 'Bu {event} ardından bakiye oranı, kupon aralığı ve sıklığınızda belirgin bir değişim görülmüyor.',
+        afterSteady: 'Bu {event} ardından bakiye payı, kupon aralığı ve sıklığınızda belirgin bir değişim görülmüyor.',
         afterPending: 'Bu {event} ardından oynanan kuponlar henüz 3 kupona ulaşmadı; değerlendirme devam ediyor.',
         /** {event} yerine geçen adlar */
         eventNames: { lossStreak: 'kayıp serisinin', winStreak: 'kazanç serisinin', returnPerception: 'kazançların' },
@@ -31,7 +31,7 @@ const TR = {
     weekly: {
         title: 'Haftalık Gelişim',
         coupons: 'Oynanan kupon',
-        avgRatio: 'Ortalama bakiye oranı',
+        avgRatio: 'Ortalama bakiye payı',
         previous: 'Önceki hafta: {value}',
         noCoupons: 'Son 7 günde sonuçlanmış kuponunuz yok.',
         patternsTitle: 'Seri sonrası davranış',
@@ -49,7 +49,7 @@ const TR = {
         up: 'yükseldi',
         down: 'düştü',
         metrics: {
-            avgRatio: 'kupon başına bakiye oranınız',
+            avgRatio: 'kupon başına bakiye payınız',
             weeklyCoupons: 'haftalık kupon sayınız',
             gapAfterLoss: 'kayıptan sonra bir sonraki kupona kadar geçen süreniz',
             avgMatches: 'kupon başına maç sayınız',
@@ -67,14 +67,14 @@ const TR = {
         afterPattern: 'Seri sonrası',
         dataOnly: 'Yorum için bu dilimde son 4 haftada en az {min} kupon gerekiyor; şimdilik sadece veriler gösteriliyor.',
         /**
-         * Sadece bakiye oranına bakar (kupon sayısına değil; bazı günler bültende çok maç olur). Yorum ve tavsiye yok, sadece veri
+         * Sadece bakiye payına bakar (kupon sayısına değil; bazı günler bültende çok maç olur). Yorum ve tavsiye yok, sadece veri
          * (Salih, 2026-10-07). {slot}: "Cumartesi (%2,0)", {direction}: yüksek / düşük, {overall}: son 4 haftanın genel değeri.
          */
-        changedDay: '{slot} günleri kupon başına kullandığınız bakiye oranı genel değerinizden {direction} (genel %{overall}).',
-        changedHour: '{slot} saatlerinde kupon başına kullandığınız bakiye oranı genel değerinizden {direction} (genel %{overall}).',
+        changedDay: '{slot} günleri kupon başına kullandığınız bakiye payı genel değerinizden {direction} (genel %{overall}).',
+        changedHour: '{slot} saatlerinde kupon başına kullandığınız bakiye payı genel değerinizden {direction} (genel %{overall}).',
         higher: 'yüksek',
         lower: 'düşük',
-        noneChanged: 'Son 4 haftada gün ve saat dilimleri arasında kupon başına bakiye oranınızda belirgin bir fark görülmüyor.',
+        noneChanged: 'Son 4 haftada gün ve saat dilimleri arasında kupon başına bakiye payınızda belirgin bir fark görülmüyor.',
     },
     // ——— Organizasyon takvimi ———
     calendar: {

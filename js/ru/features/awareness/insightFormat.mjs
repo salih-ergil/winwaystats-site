@@ -55,8 +55,8 @@ export function patternFollowUp(p) {
     }
     return lines.length ? lines : [fill(T.pattern.afterSteady, { event })];
 }
-const METRIC_KEYS = ['avgRatio', 'weeklyCoupons', 'gapAfterLoss', 'avgMatches', 'avgOdds'];
-const metricValue = (k, v) => v === null ? '—' : k === 'avgRatio' ? ratioText(v) : k === 'gapAfterLoss' ? durationText(v) : k === 'avgOdds' ? formatOdds(v) : countText(v);
+export const METRIC_KEYS = ['avgRatio', 'weeklyCoupons', 'gapAfterLoss', 'avgMatches', 'avgOdds'];
+export const metricValue = (k, v) => v === null ? '—' : k === 'avgRatio' ? ratioText(v) : k === 'gapAfterLoss' ? durationText(v) : k === 'avgOdds' ? formatOdds(v) : countText(v);
 /** "İlk haftalarınıza göre …" cümleleri (sadece başlangıç profili hazırsa); her gösterge ayrı */
 export function baselineLines(b) {
     if (b.status !== 'ready')
