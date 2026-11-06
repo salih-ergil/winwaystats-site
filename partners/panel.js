@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=e15119eccd';
+import { createLive } from './live.js?v=e776f5cfcc';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -576,9 +576,9 @@ function profileScreen() {
   <p class="muted small">${esc(s.profile.editNote)}</p>
 </section>
 <section class="pp-card"><h3>${esc(s.profile.payment)}</h3>
-  ${row(s.profile.method, esc(s.payouts.method))}${row(s.profile.iban, `<span class="pp-mono">${esc(p.iban)}</span>`)}${row(s.profile.holder, esc(p.holder))}
-  <button type="button" class="secondary" id="iban-btn">${esc(s.profile.changeIban)}</button>
-  <p class="muted small" id="iban-msg">${esc(s.profile.ibanNote)}</p>
+  ${row(s.profile.method, esc(s.payouts.method))}${row(p.swift ? s.apply.account : s.profile.iban, `<span class="pp-mono">${esc(p.iban)}</span>`)}${row(s.profile.holder, esc(p.holder))}${p.swift ? `${row(s.apply.bankName, esc(p.bankName))}${row(s.apply.bankCountry, esc(p.bankCountry))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.swift)}</span>`)}` : ''}
+  ${p.swift ? `<p class="muted small">${esc(s.live.errors.yurt_disi_hesap)}</p>` : `<button type="button" class="secondary" id="iban-btn">${esc(s.profile.changeIban)}</button>
+  <p class="muted small" id="iban-msg">${esc(s.profile.ibanNote)}</p>`}
 </section>
 <section class="pp-card"><h3>${esc(s.profile.security)}</h3>
   ${row(s.profile.twoFactor, `<span class="pill active">${esc(s.profile.on)}</span>`)}
@@ -903,16 +903,22 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}</div>` : ''}
   <input type="hidden" name="invite_code" value="${esc(invite)}">
   <h3>${esc(a.person)}</h3>
   ${f(a.fullName, '<input name="full_name" autocomplete="name" required>')}
-  <div class="pp-grid2 tight">${f(a.idNo, '<input name="id_no" inputmode="numeric" required>')}${f(a.birth, '<input name="birth_date" type="date" required>')}</div>
+  <label><span id="id-label">${esc(a.idNoTr)}</span><input name="id_no" inputmode="numeric" required></label>
+  <div class="pp-field"><span>${esc(a.birth)}</span><div class="pp-dob"><select name="birth_day" aria-label="${esc(a.birthDay)}"></select><select name="birth_month" aria-label="${esc(a.birthMonth)}"></select><select name="birth_year" aria-label="${esc(a.birthYear)}"></select></div></div>
   <div class="pp-grid2 tight">${f(a.phone, '<input name="phone" type="tel" autocomplete="tel" required>')}<div class="pp-field"><span>${esc(a.country)}</span><div id="pk-apply-country"></div></div></div>
   ${f(a.address, '<textarea name="address" rows="2" required></textarea>')}
   <div class="pp-grid2 tight">${f(a.type, `<select name="entity_type"><option value="person">${esc(a.typePerson)}</option><option value="company">${esc(a.typeCompany)}</option></select>`)}${f(a.taxNo, '<input name="tax_no" inputmode="numeric">')}</div>
-  <div class="pp-grid2 tight">${f(a.idDoc, '<input name="id_doc" type="file" accept="image/jpeg,image/png,application/pdf">')}${f(a.idDocBack, '<input name="id_doc_back" type="file" accept="image/jpeg,image/png,application/pdf">')}</div><p class="muted small">${esc(a.idDocNote)}</p>
   <h3>${esc(a.channel)}</h3>
   ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..."></textarea>')}
   ${f(a.followers, '<input name="followers" inputmode="numeric">')}
   <h3>${esc(a.payment)}</h3>
-  <div class="pp-grid2 tight">${f(a.iban, '<input name="iban" placeholder="TR.. .... .... .... .... .... .." required>')}${f(a.holder, '<input name="holder" required>')}</div>
+  ${f(a.holder, '<input name="holder" required>')}
+  <div id="pay-tr">${f(a.iban, '<input name="iban" placeholder="TR.. .... .... .... .... .... .." required>')}</div>
+  <div id="pay-foreign" hidden>
+    <div class="pp-grid2 tight">${f(a.bankName, '<input name="bank_name">')}<div class="pp-field"><span>${esc(a.bankCountry)}</span><div id="pk-bank-country"></div></div></div>
+    <div class="pp-grid2 tight">${f(a.swift, '<input name="swift_bic" autocapitalize="characters" maxlength="11">')}${f(a.account, '<input name="account_no">')}</div>
+    <p class="muted small">${esc(a.foreignNote)}</p>
+  </div>
   <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
   <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
   <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
@@ -975,10 +981,10 @@ function adminApplicationsScreen() {
   ${dupes(p).map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   <div class="pp-grid2">
     <div>${row(s.apply.idNo, esc(v.id_no))}${row(A.age, esc(age(v.birth_date)))}${row(s.apply.phone, esc(v.phone))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(v.address))}</div>
-    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${row(s.apply.taxNo, esc(v.tax_no || '–'))}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(s.apply.iban, `<span class="pp-mono">${esc(p.account?.iban ?? '–')}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
+    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${row(s.apply.taxNo, esc(v.tax_no || '–'))}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(p.account?.iban ?? '–')}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
   </div>
   ${v.channel_links ? `<p class="small">${esc(v.channel_links)}</p>` : ''}
-  <div class="pp-actions left"><button type="button" class="secondary small" data-doc="${esc(v.id_doc_path || '')}">${esc(A.openDoc)}</button>${v.id_doc_back_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_back_path)}">${esc(A.openDocBack)}</button>` : ''}</div>
+  <div class="pp-actions left">${v.id_doc_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_path)}">${esc(A.openDoc)}</button>` : ''}${v.id_doc_back_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_back_path)}">${esc(A.openDocBack)}</button>` : ''}</div>
   <div class="pp-grid2 tight"><label>${esc(A.rate)}${rateSelect('data-rate', Number(me.settings?.default_rate ?? 0.1))}</label><label>${esc(A.note)}<input data-note></label></div>
   <h4 class="pp-sub">${esc(A.checklist)}</h4>
   ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}
@@ -1296,12 +1302,13 @@ async function boot() {
       stage = 'login';
       return render();
     }
-    me = await live.me();
+    // Erişim ve doğrulama durumu aynı anda okunur; ikisi de ağ isteği
+    const [meNow, m] = await Promise.all([live.me(), live.mfa()]);
+    me = meNow;
     if (!me.access) {
       stage = 'closed';
       return render();
     }
-    const m = await live.mfa();
     if (m.current !== 'aal2') {
       if (m.verified) mfa = { factorId: m.verified.id, qr: null, secret: null };
       else {
@@ -1311,11 +1318,9 @@ async function boot() {
       stage = 'mfa';
       return render();
     }
-    me = await live.me();
     if (Number(me.settings?.fx_usd_try)) FX.USD = Number(me.settings.fx_usd_try);
     if (Number(me.settings?.fx_eur_try)) FX.EUR = Number(me.settings.fx_eur_try);
-    data = isPartner() ? await live.loadPartner(me) : EMPTY();
-    admin = me.admin ? await live.loadAdmin() : null;
+    [data, admin] = await Promise.all([isPartner() ? live.loadPartner(me) : EMPTY(), me.admin ? live.loadAdmin() : null]);
     stage = needsContract() ? 'contract' : isPartner() || me.admin ? 'panel' : me.partner?.status === 'application' ? 'review' : 'apply';
   } catch (e) {
     state.error = errText(e);
@@ -1664,9 +1669,38 @@ function bind(key) {
     });
   });
   if ($('#pk-apply-country')) {
-    loadCountries().then((list) =>
-      picker($('#pk-apply-country'), { name: 'country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: 'TR', search: s.apply.countrySearch, empty: s.apply.notFound }),
-    );
+    const form = $('#apply-form').elements;
+    // Türkiye: T.C. kimlik ve IBAN. Diğer ülkeler: pasaport ve uluslararası banka bilgileri
+    const onCountry = (code) => {
+      const tr = code === 'TR';
+      $('#id-label').textContent = tr ? s.apply.idNoTr : s.apply.idNoForeign;
+      form.id_no.inputMode = tr ? 'numeric' : 'text';
+      $('#pay-tr').hidden = !tr;
+      $('#pay-foreign').hidden = tr;
+      form.iban.required = tr;
+      for (const k of ['bank_name', 'swift_bic', 'account_no']) form[k].required = !tr;
+    };
+    onCountry('TR');
+    loadCountries().then((list) => {
+      const items = list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` }));
+      picker($('#pk-apply-country'), { name: 'country', items, value: 'TR', search: s.apply.countrySearch, empty: s.apply.notFound, onChange: onCountry });
+      picker($('#pk-bank-country'), { name: 'bank_country', items, placeholder: s.apply.bankCountry, search: s.apply.countrySearch, empty: s.apply.notFound });
+    });
+    // Doğum tarihi: gün / ay / yıl (ay ve yıla göre gün sayısı değişir; 18 yaşından küçük yıl gösterilmez)
+    const opts = (ph, list) => `<option value="">${esc(ph)}</option>${list.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}`;
+    const lastYear = new Date().getFullYear() - 18;
+    const monthName = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
+    form.birth_year.innerHTML = opts(s.apply.birthYear, Array.from({ length: 83 }, (_, i) => [lastYear - i, lastYear - i]));
+    form.birth_month.innerHTML = opts(s.apply.birthMonth, Array.from({ length: 12 }, (_, i) => [i + 1, monthName.format(new Date(2000, i, 1))]));
+    const paintDays = () => {
+      const days = new Date(Number(form.birth_year.value) || 2000, Number(form.birth_month.value) || 1, 0).getDate();
+      const keep = Math.min(Number(form.birth_day.value) || 0, days);
+      form.birth_day.innerHTML = opts(s.apply.birthDay, Array.from({ length: days }, (_, i) => [i + 1, i + 1]));
+      form.birth_day.value = keep ? String(keep) : '';
+    };
+    paintDays();
+    form.birth_month.addEventListener('change', paintDays);
+    form.birth_year.addEventListener('change', paintDays);
   }
   $('#apply-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1683,19 +1717,21 @@ function bind(key) {
       msg.className = 'msg error';
       return;
     }
-    const file = f.id_doc.files[0];
-    const back = f.id_doc_back.files[0];
-    if (!file || !back || file.size > 5 * 1024 * 1024 || back.size > 5 * 1024 * 1024) {
-      msg.textContent = s.live.fileRequired;
+    if (!f.birth_year.value || !f.birth_month.value || !f.birth_day.value) {
+      msg.textContent = s.apply.birthRequired;
       msg.className = 'msg error';
       return;
     }
     const fields = Object.fromEntries(
-      ['full_name', 'id_no', 'birth_date', 'phone', 'country', 'address', 'entity_type', 'tax_no', 'channel_links', 'followers', 'iban', 'holder', 'invite_code'].map((k) => [k, f[k].value]),
+      ['full_name', 'id_no', 'phone', 'country', 'address', 'entity_type', 'tax_no', 'channel_links', 'followers', 'holder', 'invite_code'].map((k) => [k, f[k].value]),
     );
+    const pad = (v) => String(v).padStart(2, '0');
+    fields.birth_date = `${f.birth_year.value}-${pad(f.birth_month.value)}-${pad(f.birth_day.value)}`;
+    if (f.country.value === 'TR') fields.iban = f.iban.value;
+    else Object.assign(fields, { iban: f.account_no.value, bank_name: f.bank_name.value, bank_country: f.bank_country.value, swift_bic: f.swift_bic.value });
     for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) fields[k] = f[k].checked;
     act(e.currentTarget.querySelector('button[type=submit]'), msg, async () => {
-      await live.apply(fields, file, back);
+      await live.apply(fields);
       await boot();
     });
   });

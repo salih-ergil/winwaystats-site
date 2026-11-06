@@ -1,7 +1,8 @@
 // Winway Partners paneli: gerçek veri (Supabase). Ekranlar örnek veriyle (sample.js) aynı biçimdeki `data` nesnesini okur;
 // bu dosya sunucudan okuyup o biçime çevirir. Partner kendi tablolarını RLS ile (iki adımlı doğrulamalı oturum) okur;
 // getirdiği kullanıcılar, tıklamalar, temsilci listeleri kişisel veri döndürmeyen sunucu fonksiyonlarından gelir.
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// Supabase istemcisi sayfada tek dosya olarak yüklenir (/partners/supabase.js; web-sitesi.mjs paketten kopyalar)
+const { createClient } = window.supabase;
 
 const DAY = 86400000;
 const n = (v) => Number(v ?? 0);
@@ -58,17 +59,7 @@ export function createLive(W) {
     },
 
     // ---- Başvuru ----
-    async apply(fields, front, back) {
-      const session = await live.session();
-      const up = async (file, side) => {
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
-        const path = `${session.user.id}/kimlik-${side}-${Date.now()}.${ext}`;
-        ok(await sb.storage.from('partner-belgeler').upload(path, file, { contentType: file.type, upsert: false }));
-        return path;
-      };
-      const [frontPath, backPath] = [await up(front, 'on'), await up(back, 'arka')];
-      return rpc('partner_apply', { p: { ...fields, id_doc_path: frontPath, id_doc_back_path: backPath } });
-    },
+    apply: (fields) => rpc('partner_apply', { p: fields }),
 
     // ---- Partner işlemleri ----
     createCampaign: (name) => rpc('partner_campaign_create', { p_name: name }),
@@ -163,6 +154,9 @@ export function createLive(W) {
           language: 'Türkçe',
           iban: acct?.iban ?? '',
           holder: acct?.holder ?? '',
+          bankName: acct?.bank_name ?? '',
+          bankCountry: acct?.bank_country ?? '',
+          swift: acct?.swift_bic ?? '',
           ibanSince: ts(acct?.created_at) ?? now,
           contractAt: ts(p.contract_accepted_at) ?? joined,
           contractVersion: p.contract_version ?? '1.0',

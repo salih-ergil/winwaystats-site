@@ -330,3 +330,11 @@ details.pp-group[open] > summary::after { transform: rotate(180deg); }
 .pp-orb.two span { font-size: 26px; }
 .pp-field { display: grid; gap: 6px; } .pp-field > span { font-size: 14px; color: var(--muted); }
 .pp-docs { margin-top: 14px; color: var(--muted); }
+.pp-form [hidden] { display: none; }
+.pp-form #pay-tr, .pp-form #pay-foreign { display: grid; gap: 12px; }
+.pp-form #pay-tr[hidden], .pp-form #pay-foreign[hidden] { display: none; }
+.pp-dob { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1.1fr); gap: 8px; }
+@media (max-width: 480px) {
+  .pp-pubbar { flex-wrap: wrap; gap: 8px; }
+  .pp-pubbar nav { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+}
