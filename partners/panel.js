@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=8961c9cda3';
+import { createLive } from './live.js?v=294aff6dd9';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -24,6 +24,8 @@ let admin = SAMPLE ? data.adminSample : null;
 let mfa = { factorId: null, qr: null, secret: null };
 document.querySelectorAll('link[media="print"]').forEach((l) => (l.media = 'all')); // yazı tipi sayfayı bekletmez
 let captchaToken = null;
+const openCards = new Set(); // açık başvuru kartları
+const repDetails = {}; // açılan temsilcilik başvurusu metinleri (sadece bellekte)
 const revealed = {}; // yöneticinin açtığı şifreli alanlar (sadece bellekte)
 let forgot = null; // şifre sıfırlama adımı: { step: 'email' | 'code' | 'totp' | 'new', email, factorId }
 const app = document.getElementById('app');
@@ -1009,6 +1011,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
     <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
     <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
+    <div class="pp-repinfo"><button type="button" class="secondary small" id="rep-info-btn">${esc(a.rep.btn)}</button><div class="notice small" id="rep-info" hidden><b>${esc(a.rep.infoTitle)}</b><br>${esc(a.rep.info)}<div id="rep-info-msg"></div></div></div>
     <label class="pp-check"><input type="checkbox" name="accept_marketing"> <span>${esc(a.marketing)}</span></label>
     ${GDPR_COUNTRIES.includes(myCountry()) ? `<p class="small">${esc(a.gdprRest)} <a href="#" data-legal="gdpr">${esc(a.gdprLink)}</a></p>` : ''}
     <p class="muted small">${esc(a.accuracy)}</p>
@@ -1022,7 +1025,30 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
 const stateScreen = (title, text) => `<section class="pp-card pp-narrow"><h1>${esc(title)}</h1>${text ? `<p class="muted">${esc(text)}</p>` : ''}</section>`;
 const loadingScreen = () => stateScreen(s.live.loading, '');
 const closedScreen = () => stateScreen(s.live.closedTitle, s.live.closedText);
-const reviewScreen = () => stateScreen(s.live.reviewTitle, fmt(s.live.reviewText, { no: me?.partner?.partner_no ?? '' }));
+const reviewScreen = () => `<section class="pp-card pp-narrow"><h1>${esc(s.live.reviewTitle)}</h1><p class="muted">${esc(fmt(s.live.reviewText, { no: me?.partner?.partner_no ?? '' }))}</p>${me?.partner?.rep_application?.status ? '' : `<div class="pp-actions left"><a class="btn secondary" href="#/temsilcilik">${esc(s.apply.rep.cta)}</a></div>`}${me?.partner?.rep_application?.status ? `<p class="small"><a href="#/temsilcilik">${esc(s.apply.rep.menu)}</a></p>` : ''}</section>`;
+// Temsilcilik başvurusu: yeni hesap gerekmez, partner kaydına bağlıdır
+function repApplyScreen() {
+  const r = s.apply.rep;
+  const a = me?.partner?.rep_application;
+  const status = a?.status;
+  const back = isPartner() ? '' : legalBackReview();
+  if (me?.partner?.is_rep) return `<section class="pp-card pp-narrow"><h1>${esc(r.approvedTitle)}</h1><p class="muted">${esc(r.approvedText)}</p></section>`;
+  if (status === 'pending') return `<section class="pp-card pp-narrow">${back}<h1>${esc(r.pendingTitle)}</h1><p class="muted">${esc(r.pendingText)}</p></section>`;
+  if (status === 'auto_rejected') return `<section class="pp-card pp-narrow"><h1>${esc(r.rejectedTitle)}</h1><p class="muted">${esc(r.autoText)}</p></section>`;
+  const prior = status === 'rejected' ? `<div class="notice"><b>${esc(r.rejectedTitle)}</b>${a.reject_code && a.reject_code !== 'diger' ? `<br>${esc(s.live.rejectReasonLabel)}: ${esc(r.reasons[a.reject_code] ?? '')}` : ''}${a.reject_detail ? `<br>${esc(a.reject_code === 'diger' ? s.live.rejectReasonLabel : s.live.rejectNoteLabel)}: ${esc(a.reject_detail)}` : ''}</div>` : '';
+  return `<section class="pp-card pp-form">${back}<h1>${esc(r.formTitle)}</h1><p class="muted">${esc(r.formIntro)}</p>${prior}
+<div class="notice small">${esc(r.info)}</div>
+<form id="rep-form" novalidate>
+  <label>${esc(r.experience)}<textarea name="experience" rows="3" maxlength="1500" placeholder="${esc(r.experienceHint)}"></textarea></label>
+  <label>${esc(r.plan)}<textarea name="plan" rows="3" maxlength="1500" placeholder="${esc(r.planHint)}"></textarea></label>
+  <label>${esc(r.hours)}<input name="hours" inputmode="numeric" maxlength="2"></label>
+  <label>${esc(r.cv)}<input name="cv" type="file" accept="application/pdf"></label>
+  <label class="pp-check"><input type="checkbox" name="accept"> <span><a href="#" data-legal="temsilci">${esc(r.acceptLink)}</a>${esc(r.acceptRest)}</span></label>
+  <div class="msg" id="rep-msg"></div>
+  <button type="submit">${esc(r.submit)}</button>
+</form></section>`;
+}
+const legalBackReview = () => `<p class="small pp-backlink"><a href="#/inceleniyor">← ${esc(s.apply.wizard.back)}</a></p>`;
 // Sözleşme sürümü değişince yeniden onay (B5, 2026-11-02): onaylamadan panele geçilmez
 const contractVersionNow = () => String(me?.settings?.contract_version ?? '');
 const needsContract = () => !!me?.partner && isPartner() && !!contractVersionNow() && me.partner.contract_version !== contractVersionNow();
@@ -1070,9 +1096,10 @@ function adminApplicationsScreen() {
       // Şifreli alanlar: yönetici "göster"e basınca (kayda geçer); önizlemede örnek veri
       const open = SAMPLE ? v : revealed[p.id];
       const hid = '••••';
-      return `<section class="pp-card" data-app="${p.id}">
-  <div class="pp-cardhead"><h3>${esc(v.full_name || p.partner_no)}</h3><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))}</span></div>
-  ${dupes(p).map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
+      const d0 = dupes(p);
+      return `<details class="pp-card pp-appcard" data-app="${p.id}" data-open-key="app-${p.id}"${openCards.has(`app-${p.id}`) ? ' open' : ''}>
+  <summary><span><b>${esc(v.company_name || v.full_name || p.partner_no)}</b><br><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))} · ${esc(v.country || '–')} · ${esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson)}</span></span>${d0.length ? '<span class="pill cancelled">!</span>' : ''}</summary>
+  ${d0.map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   <div class="pp-grid2">
     <div>${row(s.apply.idNo, esc(open ? open.id_no : hid))}${row(A.age, open ? esc(age(open.birth_date)) : hid)}${row(s.apply.phone, esc(open ? open.phone : hid))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(open ? open.address : hid))}</div>
     <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${v.company_name ? `${row(s.apply.wizard.companyName, esc(v.company_name))}${v.tax_office ? row(s.apply.wizard.taxOffice, esc(v.tax_office)) : ''}${v.company_reg_no ? row(s.apply.wizard.regNoForeign, esc(v.company_reg_no)) : ''}${row(s.apply.wizard.companyAddress, open ? esc(open.company_address || '–') : hid)}` : ''}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(s.apply.marketingTitle, esc(p.marketing_consent ? s.apply.marketingOn : s.apply.marketingOff))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
@@ -1083,10 +1110,37 @@ function adminApplicationsScreen() {
   <div class="pp-grid2 tight"><label>${esc(A.rate)}${rateSelect('data-rate', Number(me.settings?.default_rate ?? 0.1))}</label><label>${esc(A.note)}<input data-note></label></div>
   <h4 class="pp-sub">${esc(A.checklist)}</h4>
   ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}
-  <div class="pp-grid2 tight"><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
+  <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
   <div class="pp-actions left"><button type="button" data-decide-app="1">${esc(A.approve)}</button><button type="button" class="danger" data-decide-app="0">${esc(A.reject)}</button></div>
   <div class="msg" data-amsg></div>
-</section>`;
+</details>`;
+    })
+    .join('');
+}
+
+// Temsilcilik başvuruları (Salih, 2026-11-06): kart kart; açılınca şifreli metinler okunur ve kayda geçer
+function adminRepAppsScreen() {
+  const r = s.apply.rep;
+  const A = s.adminLive;
+  const list = (admin?.repApps ?? []).filter((x) => x.status === 'pending');
+  if (!list.length) return `<p class="pp-empty">${esc(r.none)}</p>`;
+  const row = (k, v) => `<div class="pp-row"><span>${esc(k)}</span><b>${v}</b></div>`;
+  return list
+    .map((x) => {
+      const p = (admin.partners ?? []).find((o) => o.id === x.partner_id);
+      const key = `rep-${x.id}`;
+      const d = repDetails[x.id];
+      const ok = p?.status === 'approved';
+      return `<details class="pp-card pp-appcard" data-repapp="${x.id}" data-open-key="${key}"${openCards.has(key) ? ' open' : ''}>
+  <summary><span><b>${esc(p?.priv?.company_name || p?.priv?.full_name || p?.partner_no || '–')}</b><br><span class="muted small">${esc(p?.partner_no ?? '')} · ${date(Date.parse(x.created_at))} · ${esc(A.statuses[p?.status] ?? p?.status ?? '')}</span></span></summary>
+  ${row(r.partnerStatus, esc(A.statuses[p?.status] ?? p?.status ?? '–'))}${row(r.hours, esc(x.hours_per_week ?? '–'))}
+  ${d ? `<h4 class="pp-sub">${esc(r.experience)}</h4><p class="small pp-pre">${esc(d.experience)}</p><h4 class="pp-sub">${esc(r.plan)}</h4><p class="small pp-pre">${esc(d.plan)}</p>` : `<p class="muted small">${esc(A.revealNote)}</p>`}
+  <div class="pp-actions left">${x.cv_path ? `<button type="button" class="secondary small" data-doc="${esc(x.cv_path)}">${esc(r.cvOpen)}</button>` : ''}</div>
+  ${ok ? '' : `<div class="notice">${esc(r.needPartner)}</div>`}
+  <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(r.reasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
+  <div class="pp-actions left"><button type="button" data-rep-decide="1"${ok ? '' : ' disabled'}>${esc(A.approve)}</button><button type="button" class="danger" data-rep-decide="0">${esc(A.reject)}</button></div>
+  <div class="msg" data-amsg></div>
+</details>`;
     })
     .join('');
 }
@@ -1244,6 +1298,8 @@ const ROUTES = {
   yukleniyor: { title: s.live.loading, render: loadingScreen, public: true },
   kapali: { title: s.live.closedTitle, render: closedScreen, public: true },
   inceleniyor: { title: s.live.reviewTitle, render: reviewScreen, public: true },
+  temsilcilik: { title: s.apply.rep.formTitle, render: repApplyScreen, get public() { return !isPartner(); } },
+  'yonetici/temsilci-basvurulari': { title: s.apply.rep.adminTitle, render: () => adminRepAppsScreen() },
   'sozlesme-onay': { title: s.live.contractTitle, render: contractScreen, public: true },
   hata: { title: s.live.errors.generic, render: () => stateScreen(s.live.errors.generic, state.error), public: true },
 };
@@ -1253,7 +1309,7 @@ const G_REPORTS = [s.menu.reports, [['raporlar/ozet', s.menu.summary], ['raporla
 const G_REP = [s.rep.group, [['temsilci', s.rep.menu], ['temsilci/isaretler', s.flags.menu]]];
 const G_ADMIN = [
   s.adminLive.group,
-  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
+  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/temsilci-basvurulari', s.apply.rep.adminTitle], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
 ];
 // Önizleme (?ornek=1): her rolün menüsü elle seçilir. Bir kişi hem partner hem temsilci olabilir.
 const MENUS = {
@@ -1311,6 +1367,7 @@ const isPartner = () => ['approved', 'suspended'].includes(me?.partner?.status);
 function liveMenu() {
   const groups = [];
   if (isPartner()) groups.push(G_MAIN);
+  if (isPartner() && !me.partner.is_rep) groups.push([s.apply.rep.menu, [['temsilcilik', s.apply.rep.menu]]]);
   if (isPartner() && me.partner.is_rep) groups.push(G_REP);
   if (isPartner()) groups.push(G_PROMO, G_REPORTS);
   if (me?.admin) {
@@ -1339,7 +1396,7 @@ const STAGE_ROUTE = { loading: 'yukleniyor', login: 'giris', mfa: 'iki-adim', cl
 function currentRoute() {
   const key = location.hash.replace(/^#\/?/, '').split('?')[0] || homeKey();
   if (!SAMPLE && stage === 'login') return key === 'giris' || key === 'ulke' ? key : 'tanitim';
-  if (!SAMPLE && stage !== 'panel') return key === 'tanitim' || (key === 'ulke' && stage === 'apply') ? key : STAGE_ROUTE[stage];
+  if (!SAMPLE && stage !== 'panel') return key === 'tanitim' || (key === 'ulke' && stage === 'apply') || (key === 'temsilcilik' && stage === 'review') ? key : STAGE_ROUTE[stage];
   if (SAMPLE && ROUTES[key]?.public) return key;
   if (!SAMPLE && ['tanitim', 'basvuru', 'inceleniyor'].includes(key) && (key === 'tanitim' || allowedKeys().includes(key))) return key;
   return ROUTES[key] && allowedKeys().includes(key) ? key : homeKey();
@@ -1961,6 +2018,15 @@ function bind(key) {
       return null;
     };
     showStep(applyStep);
+    $('#rep-info-btn')?.addEventListener('click', (e) => {
+      $('#rep-info').hidden = false;
+      const m = $('#rep-info-msg');
+      if (SAMPLE) return;
+      act(e.currentTarget, m, async () => {
+        const r = await live.repInfo();
+        m.textContent = r === 'already' ? a.rep.already : a.rep.sent;
+      });
+    });
     const toCountry = () => {
       lastCountry = country;
       store('wwp-ulke', null);
@@ -2116,6 +2182,14 @@ function bind(key) {
         m.className = 'msg error';
         return;
       }
+      // Reddet: önce gerekçe açılır, ikinci basışta gönderilir
+      const box = card.querySelector('[data-reject-box]');
+      if (!approve && box.hidden) {
+        box.hidden = false;
+        b.textContent = s.apply.rep.rejectConfirm;
+        box.querySelector('[data-reject]').focus();
+        return;
+      }
       const code = card.querySelector('[data-reject]').value;
       const detail = card.querySelector('[data-reject-detail]').value.trim();
       if (!approve && (!code || (code === 'diger' && detail.length < 5))) {
@@ -2131,6 +2205,66 @@ function bind(key) {
       });
     }),
   );
+  // Başvuru kartları: açık olanlar yeniden çizimde açık kalır; temsilcilik metni açılınca okunur
+  $$('[data-open-key]').forEach((d) =>
+    d.addEventListener('toggle', () => {
+      if (d.open) openCards.add(d.dataset.openKey);
+      else openCards.delete(d.dataset.openKey);
+      const id = d.dataset.repapp;
+      if (d.open && id && !repDetails[id] && !SAMPLE) {
+        live.repDetail(Number(id)).then((x) => {
+          repDetails[id] = x;
+          rerender();
+        }).catch((e) => (d.querySelector('[data-amsg]').textContent = errText(e)));
+      }
+    }),
+  );
+  $$('[data-rep-decide]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const card = b.closest('[data-repapp]');
+      const approve = b.dataset.repDecide === '1';
+      const box = card.querySelector('[data-reject-box]');
+      if (!approve && box.hidden) {
+        box.hidden = false;
+        b.textContent = s.apply.rep.rejectConfirm;
+        box.querySelector('[data-reject]').focus();
+        return;
+      }
+      const code = card.querySelector('[data-reject]').value;
+      const detail = card.querySelector('[data-reject-detail]').value.trim();
+      const m = card.querySelector('[data-amsg]');
+      if (!approve && (!code || (code === 'diger' && detail.length < 5))) {
+        m.textContent = !code ? s.live.errors.red_gerekcesi : s.live.errors.red_detay;
+        m.className = 'msg error';
+        return;
+      }
+      act(b, m, async () => {
+        await live.repDecide(Number(card.dataset.repapp), approve, approve ? null : code, approve ? null : detail || null);
+        await reload();
+      });
+    }),
+  );
+  $('#rep-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.currentTarget.elements;
+    const msg = $('#rep-msg');
+    const E = s.live.errors;
+    const hours = Number(f.hours.value);
+    const file = f.cv.files[0];
+    const problem = f.experience.value.trim().length < 20 ? E.temsilci_deneyim : f.plan.value.trim().length < 20 ? E.temsilci_plan : !(hours >= 1 && hours <= 80) ? E.temsilci_sure : !file || file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024 ? E.temsilci_cv : !f.accept.checked ? E.temsilci_onay : '';
+    if (problem) {
+      msg.textContent = problem;
+      msg.className = 'msg error';
+      return;
+    }
+    if (SAMPLE) return;
+    act(e.currentTarget.querySelector('button[type=submit]'), msg, async () => {
+      await live.repApply({ experience: f.experience.value, plan: f.plan.value, hours: String(hours), accept: true }, file);
+      me = await live.me();
+      rerender();
+      window.scrollTo(0, 0);
+    });
+  });
   $$('[data-edit]').forEach((b) =>
     b.addEventListener('click', () => {
       state.editPartner = b.dataset.edit;

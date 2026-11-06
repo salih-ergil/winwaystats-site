@@ -65,6 +65,15 @@ export function createLive(W) {
 
     // ---- Partner işlemleri ----
     createCampaign: (name) => rpc('partner_campaign_create', { p_name: name }),
+    repInfo: () => rpc('partner_rep_info_request'),
+    async repApply(fields, file) {
+      const session = await live.session();
+      const path = `${session.user.id}/cv-${Date.now()}.pdf`;
+      ok(await sb.storage.from('partner-belgeler').upload(path, file, { contentType: 'application/pdf', upsert: false }));
+      return rpc('partner_rep_apply', { p: { ...fields, cv_path: path } });
+    },
+    repDetail: (id) => rpc('admin_rep_application_detail', { p_id: id }),
+    repDecide: (id, approve, code, detail) => rpc('admin_rep_decide', { p_id: id, p_approve: approve, p_code: code, p_detail: detail }),
     setMarketing: (on) => rpc('partner_set_marketing', { p_izin: on }),
     changeIban: (iban, holder) => rpc('partner_change_iban', { p_iban: iban, p_holder: holder }),
     rateRep: (score) => rpc('partner_rate_rep', { p_score: score }),
@@ -223,13 +232,14 @@ export function createLive(W) {
 
     // ---- Yönetici (RLS: partner_admins + aal2) ----
     async loadAdmin() {
-      const [partners, notes, priv, accts, payouts, settings, feedback, ledger, log, errs, checks] = await Promise.all([
+      const [partners, notes, priv, accts, payouts, settings, repApps, feedback, ledger, log, errs, checks] = await Promise.all([
         sb.from('partners').select(PARTNER_COLS).order('created_at', { ascending: false }).then(ok),
         rpc('admin_partner_notes'),
         sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,company_name,tax_office,company_reg_no,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
         sb.from('partner_payout_accounts').select('id,partner_id,iban_ozet,iban_son4,holder,bank_name,bank_country,swift_bic,bank_code,active,created_at').eq('active', true).then(ok),
         sb.from('partner_payouts').select('id,partner_id,period,amount_try,withholding_try,net_try,iban_son4,holder,status,created_at,approved_at,paid_at').order('created_at', { ascending: false }).then(ok),
         sb.from('partner_settings').select('*').then(ok),
+        sb.from('partner_rep_applications').select('id,partner_id,status,hours_per_week,cv_path,created_at').order('created_at', { ascending: false }).then(ok),
         sb.from('partner_rep_feedback').select('*').then(ok),
         sb.from('partner_ledger').select('partner_id,amount_try,status').in('status', ['pending', 'available', 'frozen', 'in_payout']).limit(50000).then(ok),
         sb.from('partner_admin_log').select('*').in('entity', ['partners', 'mfa_reset']).order('at', { ascending: false }).limit(500).then(ok),
@@ -250,6 +260,7 @@ export function createLive(W) {
         partners: list,
         name,
         payouts: payouts.map((x) => ({ ...x, name: name[x.partner_id] ?? '–' })),
+        repApps,
         settings: Object.fromEntries(settings.map((x) => [x.key, x.value])),
         feedback,
         log,

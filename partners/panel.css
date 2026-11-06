@@ -357,3 +357,14 @@ details.pp-group[open] > summary::after { transform: rotate(180deg); }
 .pp-backlink a { color: var(--muted); text-decoration: none; }
 .pp-fields { display: grid; gap: 12px; }
 .pp-fields[hidden] { display: none; }
+
+details.pp-appcard > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+details.pp-appcard > summary::-webkit-details-marker { display: none; }
+details.pp-appcard > summary::after { content: '⌄'; color: var(--muted); font-size: 18px; flex: none; transition: transform .15s; }
+details.pp-appcard[open] > summary { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+details.pp-appcard[open] > summary::after { transform: rotate(180deg); }
+details.pp-appcard .pill { margin-left: auto; }
+.pp-repinfo { display: grid; gap: 10px; justify-items: start; }
+.pp-repinfo .notice { width: 100%; box-sizing: border-box; }
+.pp-pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+[data-reject-box][hidden] { display: none; }
