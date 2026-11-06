@@ -6,7 +6,7 @@ const { createClient } = window.supabase;
 
 const DAY = 86400000;
 // Partnerin okuyabildiği sütunlar: yöneticinin iç notu (admin_note) burada yok, yönetici admin_partner_notes ile okur
-const PARTNER_COLS = 'id,user_id,partner_no,status,is_rep,rate,rep_id,rep_linked_by,rep_auto_assign,invite_code,domestic,member_bonus_cap,contract_version,contract_accepted_at,created_at,approved_at,status_changed_at,trial,rep_rate,rep_below_months,balance_waived_at,device_hash,reject_code,reject_detail';
+const PARTNER_COLS = 'id,user_id,partner_no,status,is_rep,rate,rep_id,rep_linked_by,rep_auto_assign,invite_code,domestic,member_bonus_cap,contract_version,contract_accepted_at,created_at,approved_at,status_changed_at,trial,rep_rate,rep_below_months,balance_waived_at,device_hash,reject_code,reject_detail,marketing_consent,marketing_consent_at,marketing_consent_surum';
 const n = (v) => Number(v ?? 0);
 const ts = (v) => (v ? Date.parse(v) : null);
 
@@ -65,6 +65,7 @@ export function createLive(W) {
 
     // ---- Partner işlemleri ----
     createCampaign: (name) => rpc('partner_campaign_create', { p_name: name }),
+    setMarketing: (on) => rpc('partner_set_marketing', { p_izin: on }),
     changeIban: (iban, holder) => rpc('partner_change_iban', { p_iban: iban, p_holder: holder }),
     rateRep: (score) => rpc('partner_rate_rep', { p_score: score }),
     requestRepChange: (note) => rpc('partner_request_rep_change', { p_note: note }),
@@ -154,6 +155,7 @@ export function createLive(W) {
           country: priv?.country ?? '',
           entity: priv?.entity_type ?? 'person',
           language: 'Türkçe',
+          marketing: !!p.marketing_consent,
           iban: acct ? `•••• ${acct.iban_son4}` : '',
           holder: acct?.holder ?? '',
           bankName: acct?.bank_name ?? '',

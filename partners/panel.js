@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=15956d7b96';
+import { createLive } from './live.js?v=8961c9cda3';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -584,6 +584,10 @@ function profileScreen() {
   ${p.swift ? `<p class="muted small">${esc(s.live.errors.yurt_disi_hesap)}</p>` : `<button type="button" class="secondary" id="iban-btn">${esc(s.profile.changeIban)}</button>
   <p class="muted small" id="iban-msg">${esc(s.profile.ibanNote)}</p>`}
 </section>
+<section class="pp-card"><h3>${esc(s.apply.marketingTitle)}</h3>
+  <label class="pp-check"><input type="checkbox" id="mkt-toggle"${p.marketing ? ' checked' : ''}> <span>${esc(s.apply.marketing)}</span></label>
+  <p class="muted small" id="mkt-msg">${esc(s.apply.marketingNote)}</p>
+</section>
 <section class="pp-card"><h3>${esc(s.profile.security)}</h3>
   ${row(s.profile.twoFactor, `<span class="pill active">${esc(s.profile.on)}</span>`)}
   ${row(s.profile.contract, esc(fmt(s.profile.accepted, { d: date(p.contractAt), v: p.contractVersion })))}
@@ -917,6 +921,8 @@ const validVkn = (v) => {
   return (10 - (t % 10)) % 10 === Number(v[9]);
 };
 const compact = (v) => v.replace(/[\s-]/g, '').toUpperCase();
+// GDPR bilgilendirmesi gösterilen ülkeler: Avrupa Ekonomik Alanı, Birleşik Krallık, İsviçre
+const GDPR_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
 const STEP_COUNT = 6;
 let applyStep = 1; // 1 kişisel, 2 kanal, 3 ödeme, 4 onay (genel sayaçta +2)
 let applyDraft = {}; // sadece bellekte; tarayıcıya yazılmaz
@@ -1003,6 +1009,8 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
     <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
     <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
+    <label class="pp-check"><input type="checkbox" name="accept_marketing"> <span>${esc(a.marketing)}</span></label>
+    ${GDPR_COUNTRIES.includes(myCountry()) ? `<p class="small">${esc(a.gdprRest)} <a href="#" data-legal="gdpr">${esc(a.gdprLink)}</a></p>` : ''}
     <p class="muted small">${esc(a.accuracy)}</p>
     <div class="msg" id="apply-msg" data-step-msg></div>
     <div class="pp-wizard-nav"><button type="button" class="secondary" data-back>${esc(w.back)}</button><button type="submit">${esc(a.submit)}</button></div>
@@ -1067,7 +1075,7 @@ function adminApplicationsScreen() {
   ${dupes(p).map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   <div class="pp-grid2">
     <div>${row(s.apply.idNo, esc(open ? open.id_no : hid))}${row(A.age, open ? esc(age(open.birth_date)) : hid)}${row(s.apply.phone, esc(open ? open.phone : hid))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(open ? open.address : hid))}</div>
-    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${v.company_name ? `${row(s.apply.wizard.companyName, esc(v.company_name))}${v.tax_office ? row(s.apply.wizard.taxOffice, esc(v.tax_office)) : ''}${v.company_reg_no ? row(s.apply.wizard.regNoForeign, esc(v.company_reg_no)) : ''}${row(s.apply.wizard.companyAddress, open ? esc(open.company_address || '–') : hid)}` : ''}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
+    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${v.company_name ? `${row(s.apply.wizard.companyName, esc(v.company_name))}${v.tax_office ? row(s.apply.wizard.taxOffice, esc(v.tax_office)) : ''}${v.company_reg_no ? row(s.apply.wizard.regNoForeign, esc(v.company_reg_no)) : ''}${row(s.apply.wizard.companyAddress, open ? esc(open.company_address || '–') : hid)}` : ''}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(s.apply.marketingTitle, esc(p.marketing_consent ? s.apply.marketingOn : s.apply.marketingOff))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
   </div>
   ${v.channel_links ? `<p class="small">${esc(v.channel_links)}</p>` : ''}
   ${open ? '' : `<div class="pp-actions left"><button type="button" class="secondary small" data-reveal="${esc(p.id)}">${esc(A.reveal)}</button></div><p class="muted small">${esc(A.revealNote)}</p>`}
@@ -1260,6 +1268,7 @@ const CORP = [
   ['site:hakkimizda', s.corp.about],
   ['sozlesme', s.apply.contractLink],
   ['aydinlatma', s.apply.privacyLink],
+  ['gdpr', s.apply.gdprLink],
   ['site:gizlilik', s.corp.privacy],
   ['site:kvkk', s.corp.kvkk],
   ['site:kullanici-sozlesmesi', s.corp.terms],
@@ -1632,6 +1641,15 @@ function bind(key) {
   $('#dl-payouts')?.addEventListener('click', () =>
     downloadCsv('winway-partners-odemeler.csv', s.payouts.cols, api.payouts().map((x) => [date(x.at), `${date(x.periodFrom)} – ${date(x.periodTo)}`, money(x.amount), s.payouts.method, '', x.status && x.status !== 'paid' ? s.live.payoutStatus[x.status] : s.payouts.paid])),
   );
+  $('#mkt-toggle')?.addEventListener('change', (e) => {
+    const on = e.target.checked;
+    const m = $('#mkt-msg');
+    act(null, m, async () => {
+      await live.setMarketing(on);
+      data.profile.marketing = on;
+      m.textContent = s.apply.marketingSaved;
+    });
+  });
   $('#iban-btn')?.addEventListener('click', () => {
     if (SAMPLE) {
       $('#iban-msg').textContent = `${s.profile.ibanNote} ${s.profile.previewOnly}`;
@@ -1975,7 +1993,7 @@ function bind(key) {
       if (isCompany()) Object.assign(fields, { company_name: f.company_name.value, tax_office: f.tax_office?.value ?? '', tax_no: f.tax_no.value, company_reg_no: f.company_reg_no.value, company_address: f.company_address.value });
       Object.assign(fields, { country, birth_date: birthValue(), phone: phoneValue(), iban: compact(f.account.value) });
       if (!tr) Object.assign(fields, { bank_name: f.bank_name.value, bank_country: bankCountry, swift_bic: compact(f.swift_bic.value), bank_code: compact(f.bank_code.value) });
-      for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) fields[k] = f[k].checked;
+      for (const k of ['accept_age', 'accept_contract', 'accept_privacy', 'accept_marketing']) fields[k] = f[k].checked;
       const msg = $('#apply-msg');
       act(e.target.querySelector('fieldset[data-step="4"] button[type=submit]'), msg, async () => {
         try {
@@ -2022,9 +2040,9 @@ function bind(key) {
           const page = new DOMParser().parseFromString(await (await fetch(`/${LANG === 'tr' ? '' : `${LANG}/`}${src.slice(5)}/`)).text(), 'text/html');
           html = (page.querySelector('article.legal') ?? page.querySelector('main .wrap'))?.innerHTML ?? '';
         } else {
-          // Partners sözleşmesi ve aydınlatma metni Türkçe (avukat onayından sonra çevrilecek); diğer dillerde not
-          html = await (await fetch(`/partners/belge/${src}.html`)).text();
-          if (LANG !== 'tr') html = `<p class="pp-legal-note">${esc(s.legalNote)}</p>${html}`;
+          // Belgeler 9 dilde; bağlayıcı olan Türkçe metindir (GDPR bilgilendirmesi hariç: okuyanın dilinde bilgilendirir)
+          html = await (await fetch(`/partners/belge/${LANG === 'tr' ? '' : `${LANG}/`}${src}.html`)).text();
+          if (LANG !== 'tr' && src !== 'gdpr') html = `<p class="pp-legal-note">${esc(s.legalNote)}</p>${html}`;
         }
         box.querySelector('.pp-modal-body').innerHTML = html;
       } catch {
