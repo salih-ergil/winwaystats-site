@@ -1277,7 +1277,7 @@ function adminPartnersScreen() {
   </div>
   <label class="pp-check"><input type="checkbox" name="is_rep"${edit.is_rep ? ' checked' : ''}> ${esc(A.isRep)}</label>
   <label class="pp-check"><input type="checkbox" name="trial"${edit.trial ? ' checked' : ''}> ${esc(A.trial)}</label>
-  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" id="pmsg"></div>
+  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.status === 'approved' ? `<button type="button" class="danger" id="psuspend" data-to="suspended">${esc(A.suspendBtn)}</button>` : edit.status === 'suspended' && !edit.security_locked_at ? `<button type="button" class="secondary" id="psuspend" data-to="approved">${esc(A.unsuspendBtn)}</button>` : ''}${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" id="pmsg"></div>
   ${!CHANNEL_CHECK_OPEN ? '' : `<h4 class="pp-sub">${esc(A.channelHistory)}</h4>${
     (admin.checks ?? []).filter((c) => c.partner_id === edit.id).length
       ? `<ul class="pp-list small">${admin.checks
@@ -2386,6 +2386,14 @@ function bind(key) {
       history.replaceState(null, '', '#/acil');
       await live.signOut().catch(() => {});
       render();
+    });
+  });
+  $('#psuspend')?.addEventListener('click', (e) => {
+    const to = e.currentTarget.dataset.to;
+    if (to === 'suspended' && !confirm(s.adminLive.suspendConfirm)) return;
+    act(e.currentTarget, $('#pmsg'), async () => {
+      await live.updatePartner($('#pedit').dataset.id, { status: to });
+      await reload();
     });
   });
   $('#punlock')?.addEventListener('click', (e) => {
