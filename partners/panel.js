@@ -1095,6 +1095,15 @@ const rateSelect = (attr, current) => {
   if (!opts.includes(cur)) opts.push(cur);
   return `<select ${attr}>${opts.sort((a, b) => a - b).map((v) => `<option value="${v / 100}"${v === cur ? ' selected' : ''}>${pctRate(v / 100)}</option>`).join('')}</select>`;
 };
+// Başvurular (Salih, 2026-11-06): partner ve temsilcilik iki sekmede; aynı kişinin iki başvurusu birbirine bağlı
+function adminApplicationsTabs() {
+  const A = s.adminLive;
+  const counts = { partner: (admin?.partners ?? []).filter((p) => p.status === 'application').length, rep: (admin?.repApps ?? []).filter((x) => x.status === 'pending').length };
+  const tab = state.appTab === 'rep' ? 'rep' : 'partner';
+  const btn = (k, label) => `<button type="button" role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-app-tab="${k}">${esc(label)} (${counts[k]})</button>`;
+  return `<div class="pp-seg" role="tablist">${btn('partner', A.appTabPartner)}${btn('rep', s.apply.rep.adminTitle)}</div>${tab === 'rep' ? adminRepAppsScreen() : adminApplicationsScreen()}`;
+}
+
 function adminApplicationsScreen() {
   const A = s.adminLive;
   const list = (admin?.partners ?? []).filter((p) => p.status === 'application');
@@ -1120,9 +1129,16 @@ function adminApplicationsScreen() {
       const open = SAMPLE ? v : revealed[p.id];
       const hid = '••••';
       const d0 = dupes(p);
+      // Aynı kişinin önceki başvuruları değişiklik kaydından sayılır
+      const history = (admin.log ?? []).filter((l) => l.entity_id === p.id && l.entity === 'partners');
+      const tries = history.filter((l) => l.after?.status === 'application' && l.before?.status !== 'application').length;
+      const lastReject = history.find((l) => l.after?.status === 'rejected' && l.before?.status !== 'rejected');
+      const hasRep = (admin.repApps ?? []).some((x) => x.partner_id === p.id && x.status === 'pending');
       return `<details class="pp-card pp-appcard" data-app="${p.id}" data-open-key="app-${p.id}"${openCards.has(`app-${p.id}`) ? ' open' : ''}>
-  <summary><span><b>${esc(v.company_name || v.full_name || p.partner_no)}</b><br><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))} · ${esc(v.country || '–')} · ${esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson)}</span></span>${d0.length ? '<span class="pill cancelled">!</span>' : ''}</summary>
+  <summary><span><b>${esc(v.company_name || v.full_name || p.partner_no)}</b><br><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))} · ${esc(v.country || '–')} · ${esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson)}</span></span>${tries > 1 ? `<span class="pill">${esc(fmt(A.reapply, { n: tries }))}</span>` : ''}${d0.length ? '<span class="pill cancelled">!</span>' : ''}</summary>
   ${d0.map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
+  ${lastReject ? `<div class="notice">${esc(fmt(A.reapplyPrev, { date: date(Date.parse(lastReject.at)) }))}${lastReject.after.reject_code && lastReject.after.reject_code !== 'diger' ? ` ${esc(s.live.rejectReasonLabel)}: ${esc(s.live.rejectReasons[lastReject.after.reject_code] ?? '')}` : ''}</div>` : ''}
+  ${hasRep ? `<div class="notice">${esc(A.repAlso)} <button type="button" class="secondary small" data-app-tab="rep">${esc(A.repAlsoBtn)}</button></div>` : ''}
   <div class="pp-grid2">
     <div>${row(s.apply.idNo, esc(open ? open.id_no : hid))}${row(A.age, open ? esc(age(open.birth_date)) : hid)}${row(s.apply.phone, esc(open ? open.phone : hid))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(open ? open.address : hid))}</div>
     <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${v.company_name ? `${row(s.apply.wizard.companyName, esc(v.company_name))}${v.tax_office ? row(s.apply.wizard.taxOffice, esc(v.tax_office)) : ''}${v.company_reg_no ? row(s.apply.wizard.regNoForeign, esc(v.company_reg_no)) : ''}${row(s.apply.wizard.companyAddress, open ? esc(open.company_address || '–') : hid)}` : ''}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(s.apply.marketingTitle, esc(p.marketing_consent ? s.apply.marketingOn : s.apply.marketingOff))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
@@ -1233,7 +1249,8 @@ function channelFlag(id) {
 
 function adminPartnersScreen() {
   const A = s.adminLive;
-  const list = (admin?.partners ?? []).filter((p) => p.status !== 'application');
+  // İncelemedekiler ve reddedilenler burada görünmez (Salih, 2026-11-06); kayıtları mükerrer başvuru denetimi için durur
+  const list = (admin?.partners ?? []).filter((p) => !['application', 'rejected'].includes(p.status));
   const reps = list.filter((p) => p.is_rep && p.status === 'approved');
   const rows = list.map((p) => [
     `<span class="pp-mono">${esc(p.partner_no)}</span>`,
@@ -1253,7 +1270,7 @@ function adminPartnersScreen() {
   const form = edit
     ? `<section class="pp-card" id="pedit" data-id="${edit.id}"><h3>${esc(edit.priv.full_name || edit.partner_no)}</h3>
   <div class="pp-grid2 tight">
-    <label>${esc(A.partnerCols[2])}<select name="status"${edit.status === 'rejected' ? ' disabled' : ''}>${(edit.status === 'rejected' ? ['rejected'] : ['approved', 'suspended', 'terminated']).map((k) => `<option value="${k}"${edit.status === k ? ' selected' : ''}>${esc(A.statuses[k])}</option>`).join('')}</select></label>
+    <label>${esc(A.partnerCols[2])}<select name="status">${['approved', 'suspended', 'terminated'].map((k) => `<option value="${k}"${edit.status === k ? ' selected' : ''}>${esc(A.statuses[k])}</option>`).join('')}</select></label>
     <label>${esc(A.rate)}${rateSelect('name="rate"', Number(edit.rate))}</label>
     <label>${esc(A.repOf)}<select name="rep_id"><option value="">${esc(A.noneRep)}</option>${reps.filter((r) => r.id !== edit.id).map((r) => `<option value="${r.id}"${edit.rep_id === r.id ? ' selected' : ''}>${esc(r.priv.full_name || r.partner_no)}</option>`).join('')}</select></label>
     <label>${esc(A.note)}<input name="admin_note" value="${esc(edit.admin_note ?? '')}"></label>
@@ -1347,7 +1364,7 @@ const ROUTES = {
   temsilci: { title: s.rep.title, render: repScreen },
   'temsilci/isaretler': { title: s.flags.title, render: flagsScreen },
   'yonetici/temsilciler': { title: s.admin.title, render: () => (SAMPLE ? adminRepsScreen() : adminRepsLiveScreen()) },
-  'yonetici/basvurular': { title: s.adminLive.applications, render: () => errorsWarn() + adminApplicationsScreen() },
+  'yonetici/basvurular': { title: s.adminLive.applications, render: () => errorsWarn() + adminApplicationsTabs() },
   'yonetici/partnerler': { title: s.adminLive.partners, render: () => errorsWarn() + adminPartnersScreen() },
   'yonetici/odemeler': { title: s.adminLive.payouts, render: () => errorsWarn() + adminPayoutsScreen() },
   'yonetici/ayarlar': { title: s.adminLive.settings, render: () => errorsWarn() + adminSettingsScreen() },
@@ -1361,7 +1378,6 @@ const ROUTES = {
   acil: { title: s.apply.rep.lockTitle, render: lockScreen, public: true },
   inceleniyor: { title: s.live.reviewTitle, render: reviewScreen, public: true },
   temsilcilik: { title: s.apply.rep.formTitle, render: repApplyScreen, get public() { return !isPartner(); } },
-  'yonetici/temsilci-basvurulari': { title: s.apply.rep.adminTitle, render: () => adminRepAppsScreen() },
   'sozlesme-onay': { title: s.live.contractTitle, render: contractScreen, public: true },
   hata: { title: s.live.errors.generic, render: () => stateScreen(s.live.errors.generic, state.error), public: true },
 };
@@ -1371,7 +1387,7 @@ const G_REPORTS = [s.menu.reports, [['raporlar/ozet', s.menu.summary], ['raporla
 const G_REP = [s.rep.group, [['temsilci', s.rep.menu], ['temsilci/isaretler', s.flags.menu]]];
 const G_ADMIN = [
   s.adminLive.group,
-  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/temsilci-basvurulari', s.apply.rep.adminTitle], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
+  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
 ];
 // Önizleme (?ornek=1): her rolün menüsü elle seçilir. Bir kişi hem partner hem temsilci olabilir.
 const MENUS = {
@@ -2288,6 +2304,12 @@ function bind(key) {
       });
     }),
   );
+  $$('[data-app-tab]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.appTab = b.dataset.appTab;
+      rerender();
+    }),
+  );
   // Başvuru kartları: açık olanlar yeniden çizimde açık kalır; temsilcilik metni açılınca okunur
   $$('[data-open-key]').forEach((d) =>
     d.addEventListener('toggle', () => {
@@ -2384,7 +2406,7 @@ function bind(key) {
     const box = $('#pedit');
     const q = (n) => box.querySelector(`[name=${n}]`);
     const patch = {
-      ...(q('status').disabled ? {} : { status: q('status').value }), // reddedilen başvuru bu formdan onaylanamaz
+      status: q('status').value,
       rate: Number(q('rate').value),
       rep_id: q('rep_id').value,
       admin_note: q('admin_note').value,
