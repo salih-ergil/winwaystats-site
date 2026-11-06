@@ -218,7 +218,9 @@ const api = {
 
 // ---- CSV ----
 function downloadCsv(name, header, rows) {
-  const cell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  // Partnerin yazdığı metin Excel'de formül gibi çalışmasın (sayılar hariç)
+  const safe = (t) => (/^[=+\-@\t\r]/.test(t) && !/^-?[\d.,\s]+$/.test(t) ? `'${t}` : t);
+  const cell = (v) => `"${safe(String(v ?? '')).replace(/"/g, '""')}"`;
   const text = `﻿${[header, ...rows].map((r) => r.map(cell).join(';')).join('\r\n')}`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
@@ -1080,7 +1082,7 @@ function adminPayoutsScreen() {
       ? `${x.status === 'listed' ? `<button type="button" class="secondary small" data-pay="${x.id}:approved">${esc(A.markApproved)}</button> ` : ''}<button type="button" class="small" data-pay="${x.id}:paid">${esc(A.markPaid)}</button> <button type="button" class="secondary small" data-pay="${x.id}:cancelled">${esc(A.cancel)}</button>`
       : '',
   ]);
-  return `<div class="pp-actions"><span></span><button type="button" class="secondary" id="bankfile">${esc(A.bankFile)}</button></div>${table(A.payoutCols, rows)}`;
+  return `<div class="pp-actions"><span></span><span class="pp-actions"><button type="button" class="secondary" id="taxfile">${esc(A.taxFile)}</button><button type="button" class="secondary" id="bankfile">${esc(A.bankFile)}</button></span></div><p class="muted small">${esc(A.taxFileNote)}</p>${table(A.payoutCols, rows)}`;
 }
 
 function adminSettingsScreen() {
@@ -1907,6 +1909,20 @@ function bind(key) {
       (admin?.payouts ?? []).filter((x) => ['listed', 'approved'].includes(x.status)).map((x) => [x.holder, x.iban, Number(x.net_try).toFixed(2).replace('.', ','), `Winway Partners ${x.period.slice(0, 7)}`]),
     ),
   );
+  // Mali müşavire verilen liste: son dönem; şahısa gider pusulası, şirketten fatura (Salih, 2026-11-06)
+  $('#taxfile')?.addEventListener('click', () => {
+    const list = (admin?.payouts ?? []).filter((x) => x.status !== 'cancelled');
+    const last = list.map((x) => x.period).sort().at(-1);
+    const tl = (v) => Number(v).toFixed(2).replace('.', ',');
+    downloadCsv(
+      `winway-partners-mali-belge-${(last ?? '').slice(0, 7)}.csv`,
+      ['Dönem', 'Belge', 'Ad soyad / Unvan', 'T.C. kimlik no', 'Vergi no', 'Adres', 'Brüt (TL)', 'Kesinti (TL)', 'Net (TL)', 'IBAN', 'Durum'],
+      list.filter((x) => x.period === last).map((x) => {
+        const v = admin.partners.find((p) => p.id === x.partner_id)?.priv ?? {};
+        return [x.period.slice(0, 7), v.entity_type === 'company' ? 'Fatura (partnerden)' : 'Gider pusulası', v.full_name, v.id_no, v.tax_no, v.address, tl(x.amount_try), tl(x.withholding_try), tl(x.net_try), x.iban, s.live.payoutStatus[x.status]];
+      }),
+    );
+  });
   $('#contract-accept')?.addEventListener('click', (e) => {
     const msg = $('#contract-msg');
     if (!$('#contract-ok')?.checked) return void (msg.textContent = s.live.contractNeedCheck);
