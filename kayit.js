@@ -281,6 +281,11 @@ $('pass-toggle').addEventListener('click', (e) => {
   form.password.type = show ? 'text' : 'password';
   e.currentTarget.textContent = show ? s.l.hide : s.l.show;
 });
+$('back-partner').hidden = !fromPartner;
+$('back-form').addEventListener('click', (e) => {
+  e.preventDefault();
+  step('step-form');
+});
 $('otp-form').addEventListener('submit', submitOtp);
 $('resend').addEventListener('click', resend);
 renderCaptcha();

@@ -221,7 +221,7 @@ export function createLive(W) {
     async loadAdmin() {
       const [partners, priv, accts, payouts, settings, feedback, ledger, log, errs, checks] = await Promise.all([
         sb.from('partners').select('*').order('created_at', { ascending: false }).then(ok),
-        sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
+        sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,company_name,tax_office,company_reg_no,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
         sb.from('partner_payout_accounts').select('id,partner_id,iban_ozet,iban_son4,holder,bank_name,bank_country,swift_bic,bank_code,active,created_at').eq('active', true).then(ok),
         sb.from('partner_payouts').select('id,partner_id,period,amount_try,withholding_try,net_try,iban_son4,holder,status,created_at,approved_at,paid_at').order('created_at', { ascending: false }).then(ok),
         sb.from('partner_settings').select('*').then(ok),

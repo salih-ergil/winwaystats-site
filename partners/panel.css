@@ -353,3 +353,7 @@ details.pp-group[open] > summary::after { transform: rotate(180deg); }
 .pp-dial { display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; white-space: nowrap; color: var(--muted); }
 .pp-form .pp-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; overflow-wrap: anywhere; }
 .pp-form .pp-row b { text-align: right; }
+.pp-backlink { margin: 0 0 12px; }
+.pp-backlink a { color: var(--muted); text-decoration: none; }
+.pp-fields { display: grid; gap: 12px; }
+.pp-fields[hidden] { display: none; }

@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=f80f6af7ff';
+import { createLive } from './live.js?v=512f03c545';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -853,7 +853,7 @@ function forgotScreen() {
 function loginScreen() {
   if (forgot) return forgotScreen();
   const l = s.login;
-  return `<section class="pp-card pp-narrow">${myCountry() ? stepper(2) : ''}<h1>${esc(l.title)}</h1><p class="muted">${esc(l.intro)}</p>
+  return `<section class="pp-card pp-narrow">${myCountry() ? `${legalBack('#/ulke')}${stepper(2)}` : ''}<h1>${esc(l.title)}</h1><p class="muted">${esc(l.intro)}</p>
 <form id="login-form">
   <label>${esc(l.email)}<input name="email" type="email" autocomplete="email" required></label>
   <label>${esc(l.password)}<input name="password" type="password" autocomplete="current-password" required></label>
@@ -907,11 +907,25 @@ const validIban = (v) => {
   for (const c of v.slice(4) + v.slice(0, 4)) r = /\d/.test(c) ? (r * 10 + Number(c)) % 97 : (r * 100 + c.charCodeAt(0) - 55) % 97;
   return r === 1;
 };
+const validVkn = (v) => {
+  if (!/^\d{10}$/.test(v)) return false;
+  let t = 0;
+  for (let i = 0; i < 9; i++) {
+    const x = (Number(v[i]) + 9 - i) % 10;
+    t += x === 9 ? 9 : (x * 2 ** (9 - i)) % 9;
+  }
+  return (10 - (t % 10)) % 10 === Number(v[9]);
+};
 const compact = (v) => v.replace(/[\s-]/g, '').toUpperCase();
 const STEP_COUNT = 6;
 let applyStep = 1; // 1 kişisel, 2 kanal, 3 ödeme, 4 onay (genel sayaçta +2)
 let applyDraft = {}; // sadece bellekte; tarayıcıya yazılmaz
-const myCountry = () => load('wwp-ulke') || '';
+const myCountry = () => {
+  const c = load('wwp-ulke');
+  return c && c !== 'null' ? c : ''; // eski sürüm "null" yazısı bırakmış olabilir
+};
+let lastCountry = ''; // "Değiştir" sonrası listede seçili gelir; aynı ülke seçilirse form korunur
+const legalBack = (href) => `<p class="small pp-backlink"><a href="${href}">← ${esc(s.apply.wizard.back)}</a></p>`;
 const kayitHref = () => {
   const q = new URLSearchParams({ partner: '1' });
   if (myCountry()) q.set('ulke', myCountry());
@@ -924,7 +938,7 @@ const stepper = (n) => {
 
 function countryScreen() {
   const w = s.apply.wizard;
-  return `<section class="pp-card pp-narrow">${stepper(1)}<h1>${esc(w.countryTitle)}</h1><p class="muted">${esc(w.countryIntro)}</p>
+  return `<section class="pp-card pp-narrow">${legalBack('#/tanitim')}${stepper(1)}<h1>${esc(w.countryTitle)}</h1><p class="muted">${esc(w.countryIntro)}</p>
 <div id="pk-start-country"></div>
 <div class="msg" id="country-msg"></div>
 <div class="pp-actions left"><button type="button" id="country-next">${esc(w.next)}</button></div></section>`;
@@ -945,16 +959,24 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}</div>` : ''}
 <form id="apply-form" novalidate>
   <input type="hidden" name="invite_code" value="${esc(invite)}">
   <fieldset data-step="1" hidden>
-    <h3>${esc(a.person)}</h3>
-    ${f(a.fullName, '<input name="full_name" autocomplete="name">')}
+    ${f(a.type, `<select name="entity_type"><option value="person">${esc(a.typePerson)}</option><option value="company">${esc(a.typeCompany)}</option></select>`)}
+    <div id="company-fields" class="pp-fields" hidden>
+      <p class="muted small">${esc(w.companyNote)}</p>
+      <h3>${esc(w.companyTitle)}</h3>
+      ${f(w.companyName, '<input name="company_name" autocomplete="organization">')}
+      ${tr ? f(w.taxOffice, '<input name="tax_office">') : ''}
+      ${f(tr ? w.taxNoTr : w.taxNoForeign, `<input name="tax_no" ${tr ? 'inputmode="numeric" maxlength="11"' : 'maxlength="30"'}>`)}
+      ${f(tr ? w.regNoTr : w.regNoForeign, `<input name="company_reg_no" ${tr ? 'inputmode="numeric" maxlength="16"' : 'maxlength="30"'}>`)}
+      ${f(w.companyAddress, `<textarea name="company_address" rows="2" placeholder="${esc(w.addressHint)}"></textarea>`)}
+    </div>
+    <h3 id="person-title">${esc(a.person)}</h3>
+    <label><span id="name-label">${esc(a.fullName)}</span><input name="full_name" autocomplete="name"></label>
     <label>${esc(tr ? a.idNoTr : a.idNoForeign)}<input name="id_no" ${tr ? 'inputmode="numeric" maxlength="11"' : 'autocapitalize="characters" maxlength="30"'}></label>
     <div class="pp-field"><span>${esc(a.birth)}</span><div class="pp-dob"><select name="birth_day" aria-label="${esc(a.birthDay)}"></select><select name="birth_month" aria-label="${esc(a.birthMonth)}"></select><select name="birth_year" aria-label="${esc(a.birthYear)}"></select></div></div>
     <label>${esc(a.phone)}<span class="pp-phone"><span class="pp-dial" id="apply-dial"></span><input name="phone" type="tel" autocomplete="tel-national"></span></label>
     <label>${esc(a.address)}<textarea name="address" rows="2" placeholder="${esc(w.addressHint)}"></textarea></label>
-    ${f(a.type, `<select name="entity_type"><option value="person">${esc(a.typePerson)}</option><option value="company">${esc(a.typeCompany)}</option></select>`)}
-    <div id="tax-field" hidden>${f(a.taxNo, '<input name="tax_no">')}</div>
     <div class="msg" data-step-msg></div>
-    ${nav('')}
+    ${nav('data-back-country')}
   </fieldset>
   <fieldset data-step="2" hidden>
     <h3>${esc(a.channel)}</h3>
@@ -1045,7 +1067,7 @@ function adminApplicationsScreen() {
   ${dupes(p).map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   <div class="pp-grid2">
     <div>${row(s.apply.idNo, esc(open ? open.id_no : hid))}${row(A.age, open ? esc(age(open.birth_date)) : hid)}${row(s.apply.phone, esc(open ? open.phone : hid))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(open ? open.address : hid))}</div>
-    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
+    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${v.company_name ? `${row(s.apply.wizard.companyName, esc(v.company_name))}${v.tax_office ? row(s.apply.wizard.taxOffice, esc(v.tax_office)) : ''}${v.company_reg_no ? row(s.apply.wizard.regNoForeign, esc(v.company_reg_no)) : ''}${row(s.apply.wizard.companyAddress, open ? esc(open.company_address || '–') : hid)}` : ''}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
   </div>
   ${v.channel_links ? `<p class="small">${esc(v.channel_links)}</p>` : ''}
   ${open ? '' : `<div class="pp-actions left"><button type="button" class="secondary small" data-reveal="${esc(p.id)}">${esc(A.reveal)}</button></div><p class="muted small">${esc(A.revealNote)}</p>`}
@@ -1252,7 +1274,8 @@ const load = (k) => {
 };
 const store = (k, v) => {
   try {
-    localStorage.setItem(k, v);
+    if (v == null) localStorage.removeItem(k);
+    else localStorage.setItem(k, v);
   } catch {}
 };
 try {
@@ -1739,7 +1762,7 @@ function bind(key) {
     loadCountries().then((list) => {
       const box = $('#pk-start-country');
       if (!box) return;
-      picker(box, { name: 'start_country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: myCountry(), placeholder: s.apply.wizard.countryPh, search: s.apply.countrySearch, empty: s.apply.notFound });
+      picker(box, { name: 'start_country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: myCountry() || lastCountry, placeholder: s.apply.wizard.countryPh, search: s.apply.countrySearch, empty: s.apply.notFound });
     });
     $('#country-next').addEventListener('click', () => {
       const c = app.querySelector('input[name="start_country"]')?.value;
@@ -1748,9 +1771,13 @@ function bind(key) {
         $('#country-msg').className = 'msg error';
         return;
       }
+      const same = c === (myCountry() || lastCountry);
       store('wwp-ulke', c);
-      applyStep = 1;
-      applyDraft = {};
+      // Ülke değiştiyse ülkeye bağlı alanlar sıfırlanır; ad gibi bilgiler korunur
+      if (!same) {
+        applyStep = 1;
+        for (const k of ['id_no', 'phone', 'account', 'bank_country', 'bank_name', 'swift_bic', 'bank_code', 'tax_office', 'tax_no', 'company_reg_no']) delete applyDraft[k];
+      }
       const target = !SAMPLE && stage === 'login' ? '#/giris' : '#/basvuru';
       const lang = COUNTRY_LANG[c] ?? 'en';
       if (lang !== LANG && W.langs?.[lang]) {
@@ -1801,7 +1828,12 @@ function bind(key) {
     f.birth_month.addEventListener('change', paintDays);
     f.birth_year.addEventListener('change', paintDays);
     // Şirketse vergi numarası
-    const paintEntity = () => ($('#tax-field').hidden = f.entity_type.value !== 'company');
+    const isCompany = () => f.entity_type.value === 'company';
+    const paintEntity = () => {
+      $('#company-fields').hidden = !isCompany();
+      $('#person-title').textContent = isCompany() ? a.wizard.repTitle : a.person;
+      $('#name-label').textContent = isCompany() ? a.wizard.repName : a.fullName;
+    };
     paintEntity();
     f.entity_type.addEventListener('change', paintEntity);
     // Ödeme alanları: banka ülkesine göre
@@ -1862,7 +1894,8 @@ function bind(key) {
     const paintSummary = () => {
       const acc = compact(f.account.value);
       $('#apply-summary').innerHTML = [
-        [a.fullName, f.full_name.value],
+        ...(isCompany() ? [[a.wizard.companyName, f.company_name.value]] : []),
+        [isCompany() ? a.wizard.repName : a.fullName, f.full_name.value],
         [a.country, $('#apply-country').textContent],
         [a.phone, phoneValue()],
         [a.holder, f.holder.value],
@@ -1874,18 +1907,25 @@ function bind(key) {
       formEl.querySelectorAll('fieldset[data-step]').forEach((x) => (x.hidden = Number(x.dataset.step) !== n));
       const bar = app.querySelector('.pp-progress');
       if (bar) bar.outerHTML = stepper(n + 2);
+      if (n === 3 && !f.holder.value.trim()) f.holder.value = isCompany() ? f.company_name.value.trim() : f.full_name.value.trim();
       if (n === 4) paintSummary();
     };
     const E = s.live.errors;
     const check = (n) => {
       if (n === 1) {
+        if (isCompany()) {
+          if (f.company_name.value.trim().length < 2) return E.sirket_adi;
+          if (tr && f.tax_office.value.trim().length < 2) return E.vergi_dairesi;
+          const tax = f.tax_no.value.trim();
+          if (tr ? !validVkn(tax) && !validTckn(tax) : tax.length < 5) return E.vergi_no;
+          if (f.company_address.value.trim().length < 10) return E.sirket_adresi;
+        }
         if (f.full_name.value.trim().length < 3) return E.ad_soyad;
         const id = f.id_no.value.trim();
         if (tr ? !validTckn(id) : id.length < 5) return tr ? E.tc_kimlik : E.kimlik_no;
         if (!birthValue()) return a.birthRequired;
         if (f.phone.value.replace(/[^\d]/g, '').length < 7) return E.telefon;
         if (f.address.value.trim().length < 10) return E.adres;
-        if (f.entity_type.value === 'company' && !f.tax_no.value.trim()) return E.vergi_no;
       }
       if (n === 3) {
         if (f.holder.value.trim().length < 3) return E.hesap_sahibi;
@@ -1902,13 +1942,19 @@ function bind(key) {
       return null;
     };
     showStep(applyStep);
+    const toCountry = () => {
+      lastCountry = country;
+      store('wwp-ulke', null);
+      rerender();
+      window.scrollTo(0, 0);
+    };
+    formEl.querySelector('[data-back-country]')?.addEventListener('click', toCountry);
     formEl.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => (stepMsg(''), showStep(applyStep - 1), window.scrollTo(0, 0))));
     $('#country-change')?.addEventListener('click', (e) => {
       e.preventDefault();
-      store('wwp-ulke', null);
-      rerender();
+      toCountry();
     });
-    const ERROR_STEP = { ad_soyad: 1, kimlik_no: 1, tc_kimlik: 1, yas_18: 1, telefon: 1, adres: 1, vergi_no: 1, iban: 3, hesap_no: 3, hesap_sahibi: 3, banka_adi: 3, banka_ulkesi: 3, swift_kodu: 3, banka_kodu: 3 };
+    const ERROR_STEP = { sirket_adi: 1, vergi_dairesi: 1, sirket_adresi: 1, ad_soyad: 1, kimlik_no: 1, tc_kimlik: 1, yas_18: 1, telefon: 1, adres: 1, vergi_no: 1, iban: 3, hesap_no: 3, hesap_sahibi: 3, banka_adi: 3, banka_ulkesi: 3, swift_kodu: 3, banka_kodu: 3 };
     formEl.addEventListener('submit', (e) => {
       e.preventDefault();
       if (SAMPLE) {
@@ -1924,7 +1970,8 @@ function bind(key) {
         window.scrollTo(0, 0);
         return;
       }
-      const fields = Object.fromEntries(['full_name', 'id_no', 'address', 'entity_type', 'tax_no', 'channel_links', 'followers', 'holder', 'invite_code'].map((k) => [k, f[k].value]));
+      const fields = Object.fromEntries(['full_name', 'id_no', 'address', 'entity_type', 'channel_links', 'followers', 'holder', 'invite_code'].map((k) => [k, f[k].value]));
+      if (isCompany()) Object.assign(fields, { company_name: f.company_name.value, tax_office: f.tax_office?.value ?? '', tax_no: f.tax_no.value, company_reg_no: f.company_reg_no.value, company_address: f.company_address.value });
       Object.assign(fields, { country, birth_date: birthValue(), phone: phoneValue(), iban: compact(f.account.value) });
       if (!tr) Object.assign(fields, { bank_name: f.bank_name.value, bank_country: bankCountry, swift_bic: compact(f.swift_bic.value), bank_code: compact(f.bank_code.value) });
       for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) fields[k] = f[k].checked;
@@ -2140,8 +2187,8 @@ function bind(key) {
       const tl = (v) => Number(v).toFixed(2).replace('.', ',');
       downloadCsv(
         `winway-partners-mali-belge-${period}.csv`,
-        ['Dönem', 'Belge', 'Ad soyad / Unvan', 'T.C. kimlik no', 'Vergi no', 'Adres', 'Brüt (TL)', 'Kesinti (TL)', 'Net (TL)', 'IBAN', 'Durum'],
-        list.map((x) => [String(x.period).slice(0, 7), x.entity_type === 'company' ? 'Fatura (partnerden)' : 'Gider pusulası', x.full_name, x.id_no, x.tax_no, x.address, tl(x.amount_try), tl(x.withholding_try), tl(x.net_try), x.iban, s.live.payoutStatus[x.status]]),
+        ['Dönem', 'Belge', 'Ad soyad / Unvan', 'T.C. kimlik no', 'Vergi dairesi', 'Vergi no', 'MERSİS / Kayıt no', 'Adres', 'Brüt (TL)', 'Kesinti (TL)', 'Net (TL)', 'IBAN', 'Durum'],
+        list.map((x) => [String(x.period).slice(0, 7), x.entity_type === 'company' ? 'Fatura (partnerden)' : 'Gider pusulası', x.company_name || x.full_name, x.id_no, x.tax_office, x.tax_no, x.company_reg_no, x.company_address || x.address, tl(x.amount_try), tl(x.withholding_try), tl(x.net_try), x.iban, s.live.payoutStatus[x.status]]),
       );
     }),
   );
