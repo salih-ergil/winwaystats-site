@@ -76,11 +76,11 @@ export function createLive(W) {
       const p = ok(await sb.from('partners').select('*').eq('user_id', uid).single());
       const joined = ts(p.approved_at) ?? ts(p.created_at);
       const [priv, acct, camps, ledger, payouts, users, clicks, myRep, prof] = await Promise.all([
-        sb.from('partner_private').select('*').eq('partner_id', p.id).maybeSingle().then(ok),
-        sb.from('partner_payout_accounts').select('*').eq('partner_id', p.id).eq('active', true).maybeSingle().then(ok),
+        sb.from('partner_private').select('partner_id,full_name,country,entity_type').eq('partner_id', p.id).maybeSingle().then(ok),
+        sb.from('partner_payout_accounts').select('iban_son4,holder,bank_name,bank_country,swift_bic,bank_code,created_at').eq('partner_id', p.id).eq('active', true).maybeSingle().then(ok),
         sb.from('partner_campaigns').select('*').eq('partner_id', p.id).order('created_at').then(ok),
         sb.from('partner_ledger').select('*').eq('partner_id', p.id).order('created_at').limit(20000).then(ok),
-        sb.from('partner_payouts').select('*').eq('partner_id', p.id).order('created_at', { ascending: false }).then(ok),
+        sb.from('partner_payouts').select('id,period,amount_try,withholding_try,net_try,iban_son4,holder,status,created_at,approved_at,paid_at').eq('partner_id', p.id).order('created_at', { ascending: false }).then(ok),
         rpc('partner_my_users'),
         rpc('partner_my_clicks', { p_from: new Date(joined - DAY).toISOString(), p_to: new Date().toISOString() }),
         rpc('partner_my_rep'),
@@ -152,7 +152,7 @@ export function createLive(W) {
           country: priv?.country ?? '',
           entity: priv?.entity_type ?? 'person',
           language: 'Türkçe',
-          iban: acct?.iban ?? '',
+          iban: acct ? `•••• ${acct.iban_son4}` : '',
           holder: acct?.holder ?? '',
           bankName: acct?.bank_name ?? '',
           bankCountry: acct?.bank_country ?? '',
@@ -221,9 +221,9 @@ export function createLive(W) {
     async loadAdmin() {
       const [partners, priv, accts, payouts, settings, feedback, ledger, log, errs, checks] = await Promise.all([
         sb.from('partners').select('*').order('created_at', { ascending: false }).then(ok),
-        sb.from('partner_private').select('*').then(ok),
-        sb.from('partner_payout_accounts').select('*').eq('active', true).then(ok),
-        sb.from('partner_payouts').select('*').order('created_at', { ascending: false }).then(ok),
+        sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
+        sb.from('partner_payout_accounts').select('id,partner_id,iban_ozet,iban_son4,holder,bank_name,bank_country,swift_bic,bank_code,active,created_at').eq('active', true).then(ok),
+        sb.from('partner_payouts').select('id,partner_id,period,amount_try,withholding_try,net_try,iban_son4,holder,status,created_at,approved_at,paid_at').order('created_at', { ascending: false }).then(ok),
         sb.from('partner_settings').select('*').then(ok),
         sb.from('partner_rep_feedback').select('*').then(ok),
         sb.from('partner_ledger').select('partner_id,amount_try,status').in('status', ['pending', 'available', 'frozen', 'in_payout']).limit(50000).then(ok),
@@ -260,6 +260,9 @@ export function createLive(W) {
       }
       return data;
     },
+    // Şifreli kişisel veri: sadece yönetici, her istek sunucuda kayda geçer
+    reveal: (id) => rpc('admin_partner_reveal', { p_partner: id }),
+    exportPayouts: (kind) => rpc('admin_payout_export', { p_tur: kind }),
     docUrl: async (path) => ok(await sb.storage.from('partner-belgeler').createSignedUrl(path, 300)).signedUrl,
     decideApplication: (id, approve, rate, note) => rpc('admin_partner_decide', { p_partner: id, p_approve: approve, p_rate: rate, p_note: note }),
     updatePartner: (id, patch) => rpc('admin_partner_update', { p_partner: id, p: patch }),

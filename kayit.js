@@ -2,12 +2,11 @@
 // (src/features/auth/validation.ts); hesap açılınca kullanıcı uygulamaya bu hesapla girer. Partner kodu (bağlantıdan ya da
 // elle) kayıttaki ek bilgiye yazılır; sunucu hesabı açarken kullanıcıyı partnere bağlar (partner_on_profile_created).
 // Ayrıca /p/<kod> yönlendirmesi 404.html'den buraya ?kod=...&k=1 ile gelir (tıklama orada sayılır).
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { loadCities, loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWK;
 const s = W.s;
-const supabase = createClient(W.url, W.key, { auth: { persistSession: true, autoRefreshToken: true } });
+const client = globalThis.supabase.createClient(W.url, W.key, { auth: { persistSession: true, autoRefreshToken: true } });
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
@@ -15,7 +14,7 @@ const params = new URLSearchParams(location.search);
 const USERNAME = /^[A-Za-z0-9_.çğıöşüÇĞİÖŞÜ]{3,20}$/;
 const usernameKey = (v) => v.trim().replace(/[çÇğĞıIİöÖşŞüÜ]/g, (c) => ({ ç: 'c', Ç: 'c', ğ: 'g', Ğ: 'g', ı: 'i', I: 'i', İ: 'i', ö: 'o', Ö: 'o', ş: 's', Ş: 's', ü: 'u', Ü: 'u' })[c]).toLowerCase();
 const reserved = (v) => /pisagol|winway|admin|moderat|destek|support|yonetici|resmi|official/.test(usernameKey(v).replace(/[_.]/g, ''));
-const SYMBOL = /[^A-Za-z0-9çğıöşüÇĞİÖŞÜ\s]/;
+const SYMBOL = /[!@#$%^&*()_+\-=[\]{};'\\:"|<>?,./`~]/; // sunucudaki kuralla aynı
 const normalizePhone = (v) => {
   const d = v.replace(/[^\d+]/g, '');
   if (/^05\d{9}$/.test(d)) return `+9${d}`;
@@ -39,7 +38,7 @@ function validate(f) {
   if (f.full_name.value.trim().split(/\s+/).length < 2) e.full_name = s.err.fullName;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(f.email.value.trim())) e.email = s.err.email;
   const p = f.password.value;
-  if (p.length < 8 || !/[a-zçğıöşü]/.test(p) || !/[A-ZÇĞİÖŞÜ]/.test(p) || !/\d/.test(p) || !SYMBOL.test(p)) e.password = s.err.password;
+  if (p.length < 8 || !/[a-z]/.test(p) || !/[A-Z]/.test(p) || !/\d/.test(p) || !SYMBOL.test(p)) e.password = s.err.password;
   const phone = normalizePhone(`${dialOf(f.phone_cc.value)}${f.phone.value.replace(/^0/, '')}`);
   if (!/^\+\d{10,15}$/.test(phone)) e.phone = s.err.phone;
   if (!f.birth_date.value) e.birth_date = s.err.birth;
@@ -91,7 +90,7 @@ if (fromLink) store('ww_partner_source', 'link');
 async function checkCode(v) {
   const msg = $('code-msg');
   if (!v) return (msg.textContent = '');
-  const { data } = await supabase.rpc('partner_code_check', { p_code: v });
+  const { data } = await client.rpc('partner_code_check', { p_code: v });
   msg.textContent = data ? s.codeOk : s.codeBad;
   msg.className = `msg ${data ? 'ok' : 'error'}`;
 }
@@ -119,20 +118,20 @@ async function submitForm(e) {
   const btn = f.querySelector('button[type=submit]');
   btn.disabled = true;
   try {
-    const { data: free } = await supabase.rpc('username_available', { p_username: f.username.value.trim() });
+    const { data: free } = await client.rpc('username_available', { p_username: f.username.value.trim() });
     if (free === false) {
       showErrors(f, { username: s.err.usernameTaken });
       return;
     }
     // Geçici e-posta ve kayıtlı adresin takma adı (Gmail noktası, "+ek") kabul edilmez (2026-10-23)
-    const { data: mailIssue } = await supabase.rpc('email_check', { p_email: f.email.value.trim() });
+    const { data: mailIssue } = await client.rpc('email_check', { p_email: f.email.value.trim() });
     if (mailIssue) {
       showErrors(f, { email: mailIssue === 'disposable' ? s.err.disposable : s.err.exists });
       return;
     }
     const partnerCode = f.partner_code.value.trim().toUpperCase();
     email = f.email.value.trim();
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await client.auth.signUp({
       email,
       password: f.password.value,
       options: {
@@ -184,14 +183,14 @@ async function submitOtp(e) {
   const btn = e.currentTarget.querySelector('button[type=submit]');
   btn.disabled = true;
   try {
-    const { error } = await supabase.auth.verifyOtp({ email, token: v, type: 'email' });
+    const { error } = await client.auth.verifyOtp({ email, token: v, type: 'email' });
     if (error) throw error;
     store('ww_partner_code', null);
     store('ww_partner_source', null);
     // Partnere bağlandı mı (bilgi amaçlı); site oturumu kapatılır, kullanıcı uygulamada giriş yapacak
-    const { data: st } = await supabase.rpc('my_partner_status');
+    const { data: st } = await client.rpc('my_partner_status');
     $('done-linked').hidden = !st?.linked;
-    await supabase.auth.signOut();
+    await client.auth.signOut();
     step('step-done');
   } catch (err) {
     msg.textContent = /expired|invalid/i.test(String(err?.message)) ? s.err.otpBad : s.err.generic;
@@ -203,7 +202,7 @@ async function submitOtp(e) {
 
 async function resend() {
   const msg = $('otp-msg');
-  const { error } = await supabase.auth.resend({ type: 'signup', email });
+  const { error } = await client.auth.resend({ type: 'signup', email });
   msg.textContent = error ? s.err.generic : s.resent;
   msg.className = `msg ${error ? 'error' : 'ok'}`;
 }

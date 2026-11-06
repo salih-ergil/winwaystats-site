@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=e776f5cfcc';
+import { createLive } from './live.js?v=f80f6af7ff';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -22,7 +22,9 @@ let stage = SAMPLE ? 'panel' : 'loading';
 let me = SAMPLE ? { settings: { default_rate: 0.1 } } : null;
 let admin = SAMPLE ? data.adminSample : null;
 let mfa = { factorId: null, qr: null, secret: null };
+document.querySelectorAll('link[media="print"]').forEach((l) => (l.media = 'all')); // yazı tipi sayfayı bekletmez
 let captchaToken = null;
+const revealed = {}; // yöneticinin açtığı şifreli alanlar (sadece bellekte)
 let forgot = null; // şifre sıfırlama adımı: { step: 'email' | 'code' | 'totp' | 'new', email, factorId }
 const app = document.getElementById('app');
 document.head.insertAdjacentHTML('beforeend', `<style>${PICKER_CSS}</style>`);
@@ -399,7 +401,7 @@ function svgToPng(svg, w, h, filename) {
 // Kare kod (QR): kütüphane ilk ihtiyaçta yüklenir
 let qrLib = null;
 async function qrSvg(text, cell = 8) {
-  qrLib ??= (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
+  qrLib ??= (await import('/partners/qrcode.mjs')).default;
   const q = qrLib(0, 'M');
   q.addData(text);
   q.make();
@@ -497,7 +499,7 @@ function payoutsScreen() {
   </ul>
 </section>`;
   const list = api.payouts();
-  const masked = `${p.iban.slice(0, 4)} •••• ${p.iban.slice(-4)}`;
+  const masked = p.iban;
   const pstat = (x) => (x.status && x.status !== 'paid' ? `<span class="pill ${x.status === 'cancelled' ? 'cancelled' : 'free'}">${esc(s.live.payoutStatus[x.status])}</span>` : `<span class="pill active">${esc(s.payouts.paid)}</span>`);
   const rows = list.map((x) => [date(x.at), `${date(x.periodFrom)} – ${date(x.periodTo)}`, `<b>${money(x.amount)}</b>`, esc(s.payouts.method), esc(masked), pstat(x)]);
   const history = `<div class="pp-actions"><button type="button" class="secondary" id="dl-payouts">${esc(s.payouts.download)}</button></div>${table(s.payouts.cols, rows, s.payouts.empty)}`;
@@ -970,7 +972,8 @@ function adminApplicationsScreen() {
     const out = [];
     for (const o of admin.partners) {
       if (o.id === p.id) continue;
-      const hit = [['iban', norm(p.account?.iban), norm(o.account?.iban)], ['id_no', norm(p.priv.id_no), norm(o.priv.id_no)], ['phone', norm(p.priv.phone), norm(o.priv.phone)]].find(([, a, b]) => a && a === b);
+      // Canlıda şifreli alanlar özetle karşılaştırılır; önizlemede örnek veri
+      const hit = [['iban', norm(p.account?.iban_ozet ?? p.account?.iban), norm(o.account?.iban_ozet ?? o.account?.iban)], ['id_no', norm(p.priv.id_no_ozet ?? p.priv.id_no), norm(o.priv.id_no_ozet ?? o.priv.id_no)], ['phone', norm(p.priv.phone_ozet ?? p.priv.phone), norm(o.priv.phone_ozet ?? o.priv.phone)]].find(([, a, b]) => a && a === b);
       if (hit) out.push(fmt(A.duplicate, { what: A.dupWhat[hit[0]], who: `${o.priv.full_name || o.partner_no} · ${A.statuses[o.status]}` }));
     }
     return out;
@@ -978,14 +981,18 @@ function adminApplicationsScreen() {
   return list
     .map((p) => {
       const v = p.priv;
+      // Şifreli alanlar: yönetici "göster"e basınca (kayda geçer); önizlemede örnek veri
+      const open = SAMPLE ? v : revealed[p.id];
+      const hid = '••••';
       return `<section class="pp-card" data-app="${p.id}">
   <div class="pp-cardhead"><h3>${esc(v.full_name || p.partner_no)}</h3><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))}</span></div>
   ${dupes(p).map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   <div class="pp-grid2">
-    <div>${row(s.apply.idNo, esc(v.id_no))}${row(A.age, esc(age(v.birth_date)))}${row(s.apply.phone, esc(v.phone))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(v.address))}</div>
-    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${row(s.apply.taxNo, esc(v.tax_no || '–'))}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(p.account?.iban ?? '–')}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
+    <div>${row(s.apply.idNo, esc(open ? open.id_no : hid))}${row(A.age, open ? esc(age(open.birth_date)) : hid)}${row(s.apply.phone, esc(open ? open.phone : hid))}${row(s.apply.country, esc(v.country))}${row(s.apply.address, esc(open ? open.address : hid))}</div>
+    <div>${row(s.apply.type, esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson))}${row(s.apply.taxNo, open ? esc(open.tax_no || '–') : hid)}${row(s.apply.followers, esc(v.followers ?? '–'))}${row(p.account?.swift_bic ? s.apply.account : s.apply.iban, `<span class="pp-mono">${esc(open?.iban ?? p.account?.iban ?? (p.account ? `•••• ${p.account.iban_son4}` : '–'))}</span>`)}${row(s.apply.holder, esc(p.account?.holder ?? '–'))}${p.account?.swift_bic ? `${row(s.apply.bankName, esc(p.account.bank_name ?? '–'))}${row(s.apply.bankCountry, esc(p.account.bank_country ?? '–'))}${row(s.apply.swift, `<span class="pp-mono">${esc(p.account.swift_bic)}</span>`)}` : ''}${p.rep_id ? row(A.invitedBy, esc(admin.name[p.rep_id] ?? '–')) : ''}</div>
   </div>
   ${v.channel_links ? `<p class="small">${esc(v.channel_links)}</p>` : ''}
+  ${open ? '' : `<div class="pp-actions left"><button type="button" class="secondary small" data-reveal="${esc(p.id)}">${esc(A.reveal)}</button></div><p class="muted small">${esc(A.revealNote)}</p>`}
   <div class="pp-actions left">${v.id_doc_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_path)}">${esc(A.openDoc)}</button>` : ''}${v.id_doc_back_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_back_path)}">${esc(A.openDocBack)}</button>` : ''}</div>
   <div class="pp-grid2 tight"><label>${esc(A.rate)}${rateSelect('data-rate', Number(me.settings?.default_rate ?? 0.1))}</label><label>${esc(A.note)}<input data-note></label></div>
   <h4 class="pp-sub">${esc(A.checklist)}</h4>
@@ -1076,7 +1083,7 @@ function adminPayoutsScreen() {
     money(Number(x.amount_try)),
     money(Number(x.withholding_try)),
     `<b>${money(Number(x.net_try))}</b>`,
-    `<span class="pp-mono">${esc(x.iban)}</span>`,
+    `<span class="pp-mono">${esc(x.iban ?? `•••• ${x.iban_son4}`)}</span>`,
     esc(s.live.payoutStatus[x.status]),
     ['listed', 'approved'].includes(x.status)
       ? `${x.status === 'listed' ? `<button type="button" class="secondary small" data-pay="${x.id}:approved">${esc(A.markApproved)}</button> ` : ''}<button type="button" class="small" data-pay="${x.id}:paid">${esc(A.markPaid)}</button> <button type="button" class="secondary small" data-pay="${x.id}:cancelled">${esc(A.cancel)}</button>`
@@ -1644,7 +1651,7 @@ function bind(key) {
     const f = e.currentTarget.elements;
     const pw = f.password.value;
     // Uygulamadaki şifre kuralıyla aynı (src/features/auth/validation.ts)
-    if (pw.length < 8 || !/[a-zçğıöşü]/.test(pw) || !/[A-ZÇĞİÖŞÜ]/.test(pw) || !/\d/.test(pw) || !/[^A-Za-z0-9çğıöşüÇĞİÖŞÜ\s]/.test(pw)) return forgotMsg(s.login.reset.weak);
+    if (pw.length < 8 || !/[a-z]/.test(pw) || !/[A-Z]/.test(pw) || !/\d/.test(pw) || !/[!@#$%^&*()_+\-=[\]{};'\\:"|<>?,./`~]/.test(pw)) return forgotMsg(s.login.reset.weak);
     if (pw !== f.password2.value) return forgotMsg(s.login.reset.mismatch);
     act(e.currentTarget.querySelector('button'), $('#forgot-msg'), async () => {
       await live.updatePassword(pw);
@@ -1902,27 +1909,37 @@ function bind(key) {
       });
     }),
   );
-  $('#bankfile')?.addEventListener('click', () =>
-    downloadCsv(
-      'winway-partners-banka.csv',
-      ['Alıcı', 'IBAN', 'Tutar (TL)', 'Açıklama'],
-      (admin?.payouts ?? []).filter((x) => ['listed', 'approved'].includes(x.status)).map((x) => [x.holder, x.iban, Number(x.net_try).toFixed(2).replace('.', ','), `Winway Partners ${x.period.slice(0, 7)}`]),
+  $('#bankfile')?.addEventListener('click', (e) =>
+    act(e.currentTarget, null, async () =>
+      downloadCsv(
+        'winway-partners-banka.csv',
+        ['Alıcı', 'IBAN', 'Tutar (TL)', 'Açıklama'],
+        (await live.exportPayouts('banka')).map((x) => [x.holder, x.iban, Number(x.net_try).toFixed(2).replace('.', ','), `Winway Partners ${String(x.period).slice(0, 7)}`]),
+      ),
+    ),
+  );
+  // Şifreli kişisel veriyi göster: sunucuda kayda geçer
+  $$('[data-reveal]').forEach((b) =>
+    b.addEventListener('click', () =>
+      act(b, null, async () => {
+        revealed[b.dataset.reveal] = await live.reveal(b.dataset.reveal);
+        rerender();
+      }),
     ),
   );
   // Mali müşavire verilen liste: son dönem; şahısa gider pusulası, şirketten fatura (Salih, 2026-11-06)
-  $('#taxfile')?.addEventListener('click', () => {
-    const list = (admin?.payouts ?? []).filter((x) => x.status !== 'cancelled');
-    const last = list.map((x) => x.period).sort().at(-1);
-    const tl = (v) => Number(v).toFixed(2).replace('.', ',');
-    downloadCsv(
-      `winway-partners-mali-belge-${(last ?? '').slice(0, 7)}.csv`,
-      ['Dönem', 'Belge', 'Ad soyad / Unvan', 'T.C. kimlik no', 'Vergi no', 'Adres', 'Brüt (TL)', 'Kesinti (TL)', 'Net (TL)', 'IBAN', 'Durum'],
-      list.filter((x) => x.period === last).map((x) => {
-        const v = admin.partners.find((p) => p.id === x.partner_id)?.priv ?? {};
-        return [x.period.slice(0, 7), v.entity_type === 'company' ? 'Fatura (partnerden)' : 'Gider pusulası', v.full_name, v.id_no, v.tax_no, v.address, tl(x.amount_try), tl(x.withholding_try), tl(x.net_try), x.iban, s.live.payoutStatus[x.status]];
-      }),
-    );
-  });
+  $('#taxfile')?.addEventListener('click', (e) =>
+    act(e.currentTarget, null, async () => {
+      const list = await live.exportPayouts('mali');
+      const period = String(list[0]?.period ?? '').slice(0, 7);
+      const tl = (v) => Number(v).toFixed(2).replace('.', ',');
+      downloadCsv(
+        `winway-partners-mali-belge-${period}.csv`,
+        ['Dönem', 'Belge', 'Ad soyad / Unvan', 'T.C. kimlik no', 'Vergi no', 'Adres', 'Brüt (TL)', 'Kesinti (TL)', 'Net (TL)', 'IBAN', 'Durum'],
+        list.map((x) => [String(x.period).slice(0, 7), x.entity_type === 'company' ? 'Fatura (partnerden)' : 'Gider pusulası', x.full_name, x.id_no, x.tax_no, x.address, tl(x.amount_try), tl(x.withholding_try), tl(x.net_try), x.iban, s.live.payoutStatus[x.status]]),
+      );
+    }),
+  );
   $('#contract-accept')?.addEventListener('click', (e) => {
     const msg = $('#contract-msg');
     if (!$('#contract-ok')?.checked) return void (msg.textContent = s.live.contractNeedCheck);

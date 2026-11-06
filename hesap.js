@@ -1,11 +1,10 @@
 // winwaystats.com hesap sayfaları: Verilerim ve Hesap Silme.
 // Giriş uygulamadaki hesapla (Supabase); robot doğrulaması Cloudflare Turnstile. Yalnızca kullanıcının kendi verisi okunur (RLS).
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const W = window.WW;
 const s = W.s;
 const DELETION_GRACE_DAYS = 30;
-const supabase = createClient(W.url, W.key, { auth: { persistSession: true, autoRefreshToken: true } });
+const client = globalThis.supabase.createClient(W.url, W.key, { auth: { persistSession: true, autoRefreshToken: true } });
 const $ = (id) => document.getElementById(id);
 const fmt = (str, vars) => str.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
 const locale = { tr: 'tr-TR', en: 'en-GB', de: 'de-DE', ru: 'ru-RU', es: 'es-ES' }[W.lang] || 'tr-TR';
@@ -49,7 +48,7 @@ async function signIn(e) {
   setMsg(msg, '');
   btn.disabled = true;
   try {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await client.auth.signInWithPassword({
       email: $('email').value.trim(),
       password: $('password').value,
       options: { captchaToken: captchaToken ?? undefined },
@@ -69,13 +68,13 @@ async function signIn(e) {
 }
 
 async function signOut() {
-  await supabase.auth.signOut();
+  await client.auth.signOut();
   location.reload();
 }
 
 // ---- Veriler ----
 async function loadProfile(userId) {
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  const { data } = await client.from('profiles').select('*').eq('id', userId).maybeSingle();
   return data;
 }
 
@@ -107,7 +106,7 @@ const css = (name) => getComputedStyle(document.documentElement).getPropertyValu
 async function readAll(table, userId, orderBy, ascending) {
   const rows = [];
   for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabase.from(table).select('*').eq('user_id', userId).order(orderBy, { ascending }).range(from, from + 999);
+    const { data, error } = await client.from(table).select('*').eq('user_id', userId).order(orderBy, { ascending }).range(from, from + 999);
     if (error) throw error;
     rows.push(...(data ?? []));
     if (!data || data.length < 1000) return rows;
@@ -370,7 +369,7 @@ async function showMyData(user, profile) {
     banner.hidden = false;
     $('d-deletion-text').textContent = fmt(s.myData.pendingDeletion, { date: deletionDate(profile.deletion_requested_at) });
     $('d-cancel').onclick = async () => {
-      const { error } = await supabase.rpc('cancel_account_deletion');
+      const { error } = await client.rpc('cancel_account_deletion');
       if (!error) {
         $('d-deletion-text').textContent = s.myData.cancelled;
         $('d-cancel').hidden = true;
@@ -390,7 +389,7 @@ function showDelete(profile) {
   $('del-form').onsubmit = async (e) => {
     e.preventDefault();
     $('del-btn').disabled = true;
-    const { error } = await supabase.rpc('request_account_deletion');
+    const { error } = await client.rpc('request_account_deletion');
     if (error) {
       setMsg(msg, s.login.generic, 'error');
       $('del-btn').disabled = false;
@@ -399,13 +398,13 @@ function showDelete(profile) {
     $('del-form').hidden = true;
     setMsg(msg, fmt(s.del.done, { date: deletionDate(new Date().toISOString()) }), 'ok');
     // Oturum kapatılır; tekrar giriş talebi iptal etmez (iptal yalnızca uygulamadan ya da Verilerim'deki düğmeyle)
-    await supabase.auth.signOut();
+    await client.auth.signOut();
     $('signout').hidden = true;
   };
 }
 
 async function show() {
-  const { data } = await supabase.auth.getUser();
+  const { data } = await client.auth.getUser();
   const user = data.user;
   $('login').hidden = !!user;
   $('account').hidden = !user;
