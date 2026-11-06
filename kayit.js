@@ -22,6 +22,8 @@ const normalizePhone = (v) => {
   if (/^90\d{10}$/.test(d)) return `+${d}`;
   return d;
 };
+const pad = (v) => String(v).padStart(2, '0');
+const birthValue = (f) => (f.birth_year.value && f.birth_month.value && f.birth_day.value ? `${f.birth_year.value}-${pad(f.birth_month.value)}-${pad(f.birth_day.value)}` : '');
 const age = (iso) => {
   const b = new Date(iso);
   const t = new Date();
@@ -41,8 +43,9 @@ function validate(f) {
   if (p.length < 8 || !/[a-z]/.test(p) || !/[A-Z]/.test(p) || !/\d/.test(p) || !SYMBOL.test(p)) e.password = s.err.password;
   const phone = normalizePhone(`${dialOf(f.phone_cc.value)}${f.phone.value.replace(/^0/, '')}`);
   if (!/^\+\d{10,15}$/.test(phone)) e.phone = s.err.phone;
-  if (!f.birth_date.value) e.birth_date = s.err.birth;
-  else if (age(f.birth_date.value) < 18) e.birth_date = s.err.minor;
+  const birth = birthValue(f);
+  if (!birth) e.birth_date = s.err.birth;
+  else if (age(birth) < 18) e.birth_date = s.err.minor;
   if (!f.adult.checked) e.adult = s.err.adult;
   if (!f.terms.checked) e.terms = s.err.terms;
   return { errors: e, phone };
@@ -83,6 +86,7 @@ const load = (k) => {
   }
 };
 const fromLink = params.get('k') === '1';
+const fromPartner = params.get('partner') === '1';
 const code = (params.get('kod') || load('ww_partner_code') || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 if (params.get('kod')) store('ww_partner_code', code);
 if (fromLink) store('ww_partner_source', 'link');
@@ -140,12 +144,12 @@ async function submitForm(e) {
           username: f.username.value.trim(),
           full_name: f.full_name.value.trim(),
           phone,
-          birth_date: f.birth_date.value,
+          birth_date: birthValue(f),
           country: f.country.value || null,
           city: f.city.value.trim() || null,
           adult_confirmed: true,
           terms_accepted_at: new Date().toISOString(),
-          lang: 'tr',
+          lang: W.lang,
           signup_channel: 'web',
           ...(partnerCode ? { partner_code: partnerCode, partner_source: load('ww_partner_source') === 'link' && partnerCode === code ? 'link' : 'code' } : {}),
         },
@@ -190,6 +194,7 @@ async function submitOtp(e) {
     // Partnere bağlandı mı (bilgi amaçlı); site oturumu kapatılır, kullanıcı uygulamada giriş yapacak
     const { data: st } = await client.rpc('my_partner_status');
     $('done-linked').hidden = !st?.linked;
+    $('done-partner').hidden = !fromPartner;
     await client.auth.signOut();
     step('step-done');
   } catch (err) {
@@ -210,32 +215,62 @@ async function resend() {
 // ---- Ülke, şehir ve telefon kodu: listeden aranarak (elle yazılmaz) ----
 document.head.insertAdjacentHTML('beforeend', `<style>${PICKER_CSS}</style>`);
 const countries = await loadCountries();
+// Ülke adları sayfanın dilinde (liste Türkçe gelir)
+const regionName = (c) => {
+  if (W.lang === 'tr') return c.n;
+  try {
+    return new Intl.DisplayNames([W.lang], { type: 'region' }).of(c.c) || c.n;
+  } catch {
+    return c.n;
+  }
+};
 const dialOf = (cc) => countries.find((c) => c.c === cc)?.d ?? '';
 let dialTouched = false;
 const dialPicker = picker($('pk-dial'), {
   name: 'phone_cc',
-  items: countries.filter((c) => c.d).map((c) => ({ v: c.c, l: `${c.f} ${c.n} ${c.d}`, s: `${c.f} ${c.d}` })),
+  items: countries.filter((c) => c.d).map((c) => ({ v: c.c, l: `${c.f} ${regionName(c)} ${c.d}`, s: `${c.f} ${c.d}` })),
   value: 'TR',
-  search: 'Ülke ya da kod ara',
-  empty: 'Bulunamadı',
+  search: s.l.searchDial,
+  empty: s.l.empty,
   onChange: () => (dialTouched = true),
 });
-const cityPicker = picker($('pk-city'), { name: 'city', items: [], placeholder: 'Önce ülke seç', search: 'Şehir ara', empty: 'Bulunamadı' });
+const cityPicker = picker($('pk-city'), { name: 'city', items: [], placeholder: s.l.cityFirst, search: s.l.searchCity, empty: s.l.empty });
+const onCountry = async (cc) => {
+  if (!dialTouched && dialOf(cc)) dialPicker.set(cc);
+  $('signup-form').phone.placeholder = cc === 'TR' ? '5xx xxx xx xx' : '';
+  const list = await loadCities(cc);
+  cityPicker.setItems(list.map((n) => ({ v: n, l: n })), '', list.length ? s.l.choose : s.l.noCities);
+};
+// Partner başvurusundan gelen ülke önceden seçili (?ulke=XX)
+const startCountry = countries.some((c) => c.c === params.get('ulke')) ? params.get('ulke') : '';
 picker($('pk-country'), {
   name: 'country',
-  items: countries.map((c) => ({ v: c.c, l: `${c.f} ${c.n}` })),
-  placeholder: 'Seç',
-  search: 'Ülke ara',
-  empty: 'Bulunamadı',
-  onChange: async (cc) => {
-    if (!dialTouched && dialOf(cc)) dialPicker.set(cc);
-    const list = await loadCities(cc);
-    cityPicker.setItems(list.map((n) => ({ v: n, l: n })), '', list.length ? 'Seç' : 'Bu ülke için liste yok');
-  },
+  items: countries.map((c) => ({ v: c.c, l: `${c.f} ${regionName(c)}` })),
+  value: startCountry,
+  placeholder: s.l.choose,
+  search: s.l.searchCountry,
+  empty: s.l.empty,
+  onChange: onCountry,
 });
 
 // ---- Başlat ----
 const form = $('signup-form');
+if (startCountry) onCountry(startCountry);
+// Doğum tarihi: gün / ay / yıl
+const dobOpts = (ph, list) => `<option value="">${ph}</option>${list.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}`;
+const lastYear = new Date().getFullYear() - 18;
+const monthName = new Intl.DateTimeFormat(W.lang, { month: 'long' });
+form.birth_year.innerHTML = dobOpts(s.l.year, Array.from({ length: 83 }, (_, i) => [lastYear - i, lastYear - i]));
+form.birth_month.innerHTML = dobOpts(s.l.month, Array.from({ length: 12 }, (_, i) => [i + 1, monthName.format(new Date(2000, i, 1))]));
+const paintDays = () => {
+  const days = new Date(Number(form.birth_year.value) || 2000, Number(form.birth_month.value) || 1, 0).getDate();
+  const keep = Math.min(Number(form.birth_day.value) || 0, days);
+  form.birth_day.innerHTML = dobOpts(s.l.day, Array.from({ length: days }, (_, i) => [i + 1, i + 1]));
+  form.birth_day.value = keep ? String(keep) : '';
+};
+paintDays();
+form.birth_month.addEventListener('change', paintDays);
+form.birth_year.addEventListener('change', paintDays);
 form.partner_code.value = code;
 if (code) checkCode(code);
 form.partner_code.addEventListener('change', (e) => checkCode(e.target.value.trim().toUpperCase()));
@@ -244,7 +279,7 @@ form.addEventListener('submit', submitForm);
 $('pass-toggle').addEventListener('click', (e) => {
   const show = form.password.type === 'password';
   form.password.type = show ? 'text' : 'password';
-  e.currentTarget.textContent = show ? 'Gizle' : 'Göster';
+  e.currentTarget.textContent = show ? s.l.hide : s.l.show;
 });
 $('otp-form').addEventListener('submit', submitOtp);
 $('resend').addEventListener('click', resend);

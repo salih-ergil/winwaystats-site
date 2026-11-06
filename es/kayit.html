@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Cyg1qhKVyS1XvSyd+hQMhN5/E6YljDWuiMbT4Kj6vO4=' 'sha256-qMkXyTeqB/J9q84keEQ7GV2Bg+fF2TY4pdB9E1QBfbQ=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://gvpyzzcbcvlwrqhcnrqf.supabase.co; connect-src 'self' https://gvpyzzcbcvlwrqhcnrqf.supabase.co wss://gvpyzzcbcvlwrqhcnrqf.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<script>if(top!==self){document.documentElement.style.display='none';top.location=self.location.href;}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crear una cuenta de WinwayStats · WinwayStats</title>
+<meta name="description" content="WinwayStats: pronósticos de fútbol sin dinero real y conciencia del comportamiento.">
+<meta name="theme-color" content="#1d211d">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.png">
+<link rel="canonical" href="https://winwaystats.com/es/kayit">
+<link rel="alternate" hreflang="tr" href="https://winwaystats.com/kayit">
+<link rel="alternate" hreflang="en" href="https://winwaystats.com/en/kayit">
+<link rel="alternate" hreflang="de" href="https://winwaystats.com/de/kayit">
+<link rel="alternate" hreflang="ru" href="https://winwaystats.com/ru/kayit">
+<link rel="alternate" hreflang="es" href="https://winwaystats.com/es/kayit">
+<link rel="alternate" hreflang="fr" href="https://winwaystats.com/fr/kayit">
+<link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/kayit">
+<link rel="alternate" hreflang="it" href="https://winwaystats.com/it/kayit">
+<link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/kayit">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="site"><div class="wrap">
+  <a class="brand" href="/es"><img src="/icon.png" alt="" width="32" height="32">WinwayStats</a>
+  <nav class="main"><a href="/es">Inicio</a><a href="/es/yazilar">Artículos</a><a href="/es/verilerim">Mis datos</a><a href="/es/hesap-silme">Eliminar cuenta</a></nav>
+  <div class="langs"><a href="/kayit" hreflang="tr">TR</a><a href="/en/kayit" hreflang="en">EN</a><a href="/de/kayit" hreflang="de">DE</a><a href="/ru/kayit" hreflang="ru">RU</a><a href="/es/kayit" hreflang="es" aria-current="true">ES</a><a href="/fr/kayit" hreflang="fr">FR</a><a href="/pt/kayit" hreflang="pt">PT</a><a href="/it/kayit" hreflang="it">IT</a><a href="/pl/kayit" hreflang="pl">PL</a></div>
+</div></header>
+<main><div class="wrap">
+<section id="step-form">
+<h1>Crear una cuenta de WinwayStats</h1>
+<p class="muted">Crea tu cuenta aquí, luego descarga la app WinwayStats e inicia sesión con el mismo correo y contraseña. Sin dinero real; las monedas no se pueden comprar.</p>
+<form id="signup-form" novalidate>
+  <label>Nombre de usuario<input name="username" autocomplete="username" maxlength="20" required><span class="msg error" data-err="username"></span></label>
+  <label>Correo<input name="email" type="email" autocomplete="email" required><span class="msg error" data-err="email"></span></label>
+  <label>Contraseña<span class="k-pass"><input name="password" type="password" autocomplete="new-password" required><button type="button" class="secondary small" id="pass-toggle">Mostrar</button></span><span class="msg error" data-err="password"></span></label>
+  <label>Nombre y apellidos<input name="full_name" autocomplete="name" required><span class="msg error" data-err="full_name"></span></label>
+  <label>Teléfono<span class="k-phone"><span id="pk-dial" class="k-dial"></span><input name="phone" type="tel" autocomplete="tel-national" required></span><span class="msg error" data-err="phone"></span></label>
+  <div class="k-field"><span class="k-lab">Fecha de nacimiento</span><div class="k-dob"><select name="birth_day" aria-label="Día"></select><select name="birth_month" aria-label="Mes"></select><select name="birth_year" aria-label="Año"></select></div><span class="msg error" data-err="birth_date"></span></div>
+  <div class="k-field"><span class="k-lab">País de residencia (opcional)</span><div id="pk-country"></div></div>
+  <div class="k-field"><span class="k-lab">Ciudad de residencia (opcional)</span><div id="pk-city"></div></div>
+  <label>Código de partner (si tienes)<input name="partner_code" autocapitalize="characters" maxlength="12"><span class="msg" id="code-msg"></span></label>
+  <label class="k-check"><input type="checkbox" name="adult"> <span>Soy mayor de 18 años.</span></label><span class="msg error" data-err="adult"></span>
+  <label class="k-check"><input type="checkbox" name="terms"> <span>Acepto el <a href="/es/kullanici-sozlesmesi" target="_blank" rel="noopener">Acuerdo de Usuario</a> y confirmo que he leído la <a href="/es/gizlilik" target="_blank" rel="noopener">Política de Privacidad</a> y el <a href="/es/kvkk" target="_blank" rel="noopener">Aviso KVKK</a>.</span></label><span class="msg error" data-err="terms"></span>
+  <div id="captcha"></div>
+  <button type="submit">Crear mi cuenta</button>
+  <div class="msg" id="form-msg"></div>
+</form>
+<p class="muted small">Lista de ciudades: <a href="https://www.geonames.org" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0).</p>
+</section>
+<section id="step-otp" hidden>
+<h1>Verifica tu correo</h1>
+<p><b id="otp-email"></b></p>
+<p class="muted">Hemos enviado un código de 6 dígitos a esta dirección. El código es válido durante 15 minutos.</p>
+<form id="otp-form">
+  <label>Código de verificación<input id="otp" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label>
+  <button type="submit">Verificar</button>
+  <button type="button" class="secondary" id="resend">Reenviar código</button>
+  <div class="msg" id="otp-msg"></div>
+</form>
+</section>
+<section id="step-done" hidden>
+<h1>Tu cuenta está lista</h1>
+<p class="notice" id="done-partner" hidden><a class="btn" href="/partners/es/#/giris">Continuar la solicitud de partner</a></p>
+<p>Ahora descarga la app WinwayStats e inicia sesión con este correo y contraseña.</p>
+<p class="notice" id="done-linked" hidden>Tu código de partner se ha añadido a tu cuenta.</p>
+<div class="k-stores"><a class="k-store" href="https://play.google.com/store/apps/details?id=com.winwaystats.app" rel="noopener">Descargar en Google Play</a><span class="k-store off">App Store (próximamente)</span></div>
+</section>
+</div></main>
+<footer class="site"><div class="wrap">
+  <nav><a href="/es/gizlilik">Política de privacidad</a><a href="/es/kullanici-sozlesmesi">Acuerdo de usuario</a><a href="/es/kvkk">Aviso KVKK</a><a href="/es/hakkimizda">Quiénes somos</a><a href="/es/on-bilgilendirme">Información previa</a><a href="/es/mesafeli-satis">Contrato de venta a distancia</a><a href="mailto:info@winway.com.tr">Contacto: info@winway.com.tr</a></nav>
+  <div>© 2026 Winway Veri Analizi ve Yazılım Danışmanlık Hizmetleri Limited Şirketi · MERSİS 0813151660800001 · Kınıklı Mah. 6021 Sok. No:59/7 Pamukkale / Denizli · KEP winway@hs01.kep.tr</div>
+</div></footer>
+<style>.k-phone,.k-pass{display:flex;gap:8px}.k-dial{width:132px;flex:none}.k-field{display:grid;gap:6px}.k-lab{font-size:14px;color:var(--muted)}.k-pass input{flex:1}.k-phone select{width:96px;flex:none}.k-phone input{flex:1;min-width:0}.k-check{display:flex!important;flex-direction:row;gap:10px;align-items:flex-start;color:var(--text)!important}.k-check input{width:20px;height:20px;flex:none;margin-top:2px}.msg.ok{color:var(--green)}label .msg{font-size:13px}.k-stores{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.k-store{background:var(--green);color:var(--on-green);text-decoration:none;font-weight:700;padding:12px 16px;border-radius:10px}.k-store.off{background:var(--surface);color:var(--muted);border:1px solid var(--border)}#signup-form select{-webkit-appearance:none;appearance:none;width:100%;min-height:48px;box-sizing:border-box;background:var(--surface) no-repeat right 12px center/12px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23a0a6a0' stroke-width='2'/%3E%3C/svg%3E");border:1px solid var(--border);color:var(--text);border-radius:10px;padding:12px 32px 12px 12px;font-size:16px}#signup-form input:not([type=checkbox]){width:100%;box-sizing:border-box;min-width:0}#signup-form .k-phone select{width:104px;flex:none}#signup-form .k-phone input{flex:1}.k-dob{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.1fr);gap:8px}</style>
+<script>window.WWK = {"url":"https://gvpyzzcbcvlwrqhcnrqf.supabase.co","key":"sb_publishable_IoXxY_9W4YiY8y_cW0Ztng_InPR04BO","siteKey":"0x4AAAAAAFQSM-0eSAvDTe0g","lang":"es","s":{"title":"Crear una cuenta de WinwayStats","intro":"Crea tu cuenta aquí, luego descarga la app WinwayStats e inicia sesión con el mismo correo y contraseña. Sin dinero real; las monedas no se pueden comprar.","codeOk":"El código de partner es válido.","codeBad":"No se encontró este código de partner. Compruébalo o déjalo en blanco.","resent":"Se ha enviado un código nuevo.","err":{"username":"El nombre de usuario debe tener 3–20 caracteres; se permiten letras, números, _ y .","reserved":"Este nombre de usuario no se puede usar.","usernameTaken":"Este nombre de usuario ya está en uso.","fullName":"Escribe tu nombre y apellidos.","email":"Escribe un correo válido.","password":"La contraseña debe tener al menos 8 caracteres e incluir minúscula, mayúscula, número y símbolo.","phone":"El número de teléfono no es válido.","birth":"Selecciona tu fecha de nacimiento.","minor":"WinwayStats está abierto a mayores de 18 años.","adult":"Confirma que eres mayor de 18 años.","terms":"Acepta los acuerdos.","captchaWait":"Espera a que termine la verificación anti-bots.","captcha":"La verificación anti-bots falló; recarga la página e inténtalo de nuevo.","exists":"Ya existe una cuenta con este correo. Puedes iniciar sesión.","disposable":"No se admiten correos temporales; usa una dirección permanente.","otp":"El código debe tener 6 dígitos.","otpBad":"El código es incorrecto o ha caducado.","generic":"Algo salió mal; inténtalo de nuevo."},"l":{"username":"Nombre de usuario","email":"Correo","password":"Contraseña","show":"Mostrar","hide":"Ocultar","fullName":"Nombre y apellidos","phone":"Teléfono","birth":"Fecha de nacimiento","day":"Día","month":"Mes","year":"Año","country":"País de residencia (opcional)","city":"Ciudad de residencia (opcional)","partnerCode":"Código de partner (si tienes)","adult":"Soy mayor de 18 años.","terms":"Acepto el {{terms}} y confirmo que he leído la {{privacy}} y el {{kvkk}}.","termsName":"Acuerdo de Usuario","privacyName":"Política de Privacidad","kvkkName":"Aviso KVKK","submit":"Crear mi cuenta","cities":"Lista de ciudades:","otpTitle":"Verifica tu correo","otpText":"Hemos enviado un código de 6 dígitos a esta dirección. El código es válido durante 15 minutos.","otpLabel":"Código de verificación","verify":"Verificar","resend":"Reenviar código","doneTitle":"Tu cuenta está lista","doneText":"Ahora descarga la app WinwayStats e inicia sesión con este correo y contraseña.","linked":"Tu código de partner se ha añadido a tu cuenta.","play":"Descargar en Google Play","appstore":"App Store (próximamente)","donePartner":"Continuar la solicitud de partner","searchDial":"Buscar país o código","searchCountry":"Buscar país","searchCity":"Buscar ciudad","empty":"No encontrado","choose":"Seleccionar","cityFirst":"Selecciona primero un país","noCities":"No hay lista para este país"}}};</script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script src="/js/supabase.js?v=16aeff365b" defer></script>
+<script type="module" src="/kayit.js?v=fe0f1de33d"></script>
+</body>
+</html>

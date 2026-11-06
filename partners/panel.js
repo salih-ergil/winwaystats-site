@@ -756,13 +756,13 @@ const strip = (t, id) => `<h2 class="pp-strip" id="${id}"><span>${esc(t)}</span>
 function landingScreen() {
   const P = s.promo;
   const loginHref = SAMPLE ? '#/giris' : '#/giris';
-  const applyHref = SAMPLE ? '#/basvuru' : me ? '#/basvuru' : '#/giris';
+  const applyHref = SAMPLE ? '#/basvuru' : '#/ulke';
   return `<section class="pp-hero2">
   <div class="pp-hero2-text">
     <span class="pp-kicker">${esc(P.kicker)}</span>
     <h1>${P.title.map((l, i) => `<span${i === 1 ? ' class="hl"' : ''}>${esc(l)}</span>`).join('')}</h1>
     <p class="pp-lead">${esc(P.lead)}</p>
-    <div class="pp-actions left"><a class="btn" href="${applyHref}">${esc(P.apply)}</a><a class="btn secondary" href="${loginHref}">${esc(P.login)}</a>${me && !SAMPLE ? '' : `<a class="btn secondary" href="/kayit/">${esc(P.createAccount)}</a>`}</div>
+    <div class="pp-actions left"><a class="btn" href="${applyHref}">${esc(P.apply)}</a><a class="btn secondary" href="${loginHref}">${esc(P.login)}</a>${me && !SAMPLE ? '' : `<a class="btn secondary" href="${kayitHref()}">${esc(P.createAccount)}</a>`}</div>
     ${me && !SAMPLE ? '' : `<p class="muted small">${esc(P.createHint)}</p>`}
   </div>
   <div class="pp-hero2-art" aria-hidden="true">
@@ -795,7 +795,7 @@ ${strip(P.faqTitle, 'sss')}
 <section class="pp-cta">
   <h2>${esc(P.ctaTitle)}</h2>
   <p class="muted">${esc(P.ctaText)}</p>
-  <div class="pp-actions center"><a class="btn" href="${applyHref}">${esc(P.apply)}</a>${me && !SAMPLE ? '' : `<a class="btn secondary" href="/kayit/">${esc(P.createAccount)}</a>`}</div>
+  <div class="pp-actions center"><a class="btn" href="${applyHref}">${esc(P.apply)}</a>${me && !SAMPLE ? '' : `<a class="btn secondary" href="${kayitHref()}">${esc(P.createAccount)}</a>`}</div>
   ${docsBlock()}
 </section>`;
 }
@@ -853,7 +853,7 @@ function forgotScreen() {
 function loginScreen() {
   if (forgot) return forgotScreen();
   const l = s.login;
-  return `<section class="pp-card pp-narrow"><h1>${esc(l.title)}</h1><p class="muted">${esc(l.intro)}</p>
+  return `<section class="pp-card pp-narrow">${myCountry() ? stepper(2) : ''}<h1>${esc(l.title)}</h1><p class="muted">${esc(l.intro)}</p>
 <form id="login-form">
   <label>${esc(l.email)}<input name="email" type="email" autocomplete="email" required></label>
   <label>${esc(l.password)}<input name="password" type="password" autocomplete="current-password" required></label>
@@ -862,7 +862,7 @@ function loginScreen() {
   <div class="msg" id="login-msg"></div>
 </form>
 <p class="small"><a href="#" data-forgot="email">${esc(l.forgot)}</a></p>
-<p class="small"><a href="/kayit/">${esc(s.promo.noAccount)}</a></p>
+<p class="small"><a href="${kayitHref()}">${esc(s.promo.noAccount)}</a></p>
 ${docsBlock()}
 ${SAMPLE ? `<div class="notice">${esc(l.preview)} <a href="#/ana-sayfa">${esc(l.toPanel)}</a></div>` : ''}</section>`;
 }
@@ -896,39 +896,95 @@ ${enrolling ? `<p class="muted">${esc(SAMPLE ? t.setup : s.live.enrollText)}</p>
 </form></section>`;
 }
 
+// ---- Başvuru sihirbazı (Salih, 2026-11-06): ülke → hesap → kişisel → kanal → ödeme → onay. Dil ve alanlar ülkeye göre ----
+const COUNTRY_LANG = { TR: 'tr', KKTC: 'tr', DE: 'de', AT: 'de', CH: 'de', LI: 'de', RU: 'ru', BY: 'ru', KZ: 'ru', KG: 'ru', ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es', VE: 'es', EC: 'es', GT: 'es', CU: 'es', BO: 'es', DO: 'es', HN: 'es', PY: 'es', SV: 'es', NI: 'es', CR: 'es', PA: 'es', UY: 'es', FR: 'fr', BE: 'fr', LU: 'fr', MC: 'fr', SN: 'fr', CI: 'fr', ML: 'fr', BF: 'fr', NE: 'fr', TG: 'fr', BJ: 'fr', GA: 'fr', CD: 'fr', CG: 'fr', CM: 'fr', PT: 'pt', BR: 'pt', AO: 'pt', MZ: 'pt', CV: 'pt', IT: 'it', SM: 'it', VA: 'it', PL: 'pl' };
+const IBAN_LEN = { AD: 24, AE: 23, AL: 28, AT: 20, AZ: 28, BA: 20, BE: 16, BG: 22, BH: 22, BR: 29, BY: 28, CH: 21, CR: 22, CY: 28, CZ: 24, DE: 22, DK: 18, DO: 28, EE: 20, EG: 29, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GE: 22, GI: 23, GL: 18, GR: 27, GT: 28, HR: 21, HU: 28, IE: 22, IL: 23, IQ: 23, IS: 26, IT: 27, JO: 30, KW: 30, KZ: 20, LB: 28, LC: 32, LI: 21, LT: 20, LU: 20, LV: 21, LY: 25, MC: 27, MD: 24, ME: 22, MK: 19, MR: 27, MT: 31, MU: 30, NL: 18, NO: 15, PK: 24, PL: 28, PS: 29, PT: 25, QA: 29, RO: 24, RS: 22, SA: 24, SC: 31, SD: 18, SE: 24, SI: 19, SK: 24, SM: 27, ST: 25, SV: 28, TL: 23, TN: 24, TR: 26, UA: 29, VA: 22, VG: 24, XK: 20 };
+// Yerel banka kodu isteyen ülkeler (uluslararası havalede gerekli; sunucu da aynı biçimi denetler)
+const LOCAL_CODE = { US: { label: 'ABA routing number', re: /^\d{9}$/, max: 9 }, CA: { label: 'Transit + Institution', re: /^\d{8}$/, max: 8 }, AU: { label: 'BSB', re: /^\d{6}$/, max: 6 }, IN: { label: 'IFSC', re: /^[A-Z]{4}0[A-Z0-9]{6}$/, max: 11 } };
+const validIban = (v) => {
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(v)) return false;
+  let r = 0;
+  for (const c of v.slice(4) + v.slice(0, 4)) r = /\d/.test(c) ? (r * 10 + Number(c)) % 97 : (r * 100 + c.charCodeAt(0) - 55) % 97;
+  return r === 1;
+};
+const compact = (v) => v.replace(/[\s-]/g, '').toUpperCase();
+const STEP_COUNT = 6;
+let applyStep = 1; // 1 kişisel, 2 kanal, 3 ödeme, 4 onay (genel sayaçta +2)
+let applyDraft = {}; // sadece bellekte; tarayıcıya yazılmaz
+const myCountry = () => load('wwp-ulke') || '';
+const kayitHref = () => {
+  const q = new URLSearchParams({ partner: '1' });
+  if (myCountry()) q.set('ulke', myCountry());
+  return `/${LANG === 'tr' ? '' : `${LANG}/`}kayit/?${q}`;
+};
+const stepper = (n) => {
+  const w = s.apply.wizard;
+  return `<div class="pp-progress"><div class="pp-progress-text"><b>${esc(fmt(w.step, { n, t: STEP_COUNT }))}</b> · ${esc(w.steps[n - 1])}</div><div class="pp-progress-bar"><span style="width:${Math.round((n / STEP_COUNT) * 100)}%"></span></div></div>`;
+};
+
+function countryScreen() {
+  const w = s.apply.wizard;
+  return `<section class="pp-card pp-narrow">${stepper(1)}<h1>${esc(w.countryTitle)}</h1><p class="muted">${esc(w.countryIntro)}</p>
+<div id="pk-start-country"></div>
+<div class="msg" id="country-msg"></div>
+<div class="pp-actions left"><button type="button" id="country-next">${esc(w.next)}</button></div></section>`;
+}
+
 function applyScreen() {
+  if (!SAMPLE && !myCountry()) return countryScreen();
   const a = s.apply;
+  const w = a.wizard;
   const f = (label, input) => `<label>${esc(label)}${input}</label>`;
   const invite = new URLSearchParams(location.hash.split('?')[1] || '').get('davet') || '';
   const rejected = me?.partner?.status === 'rejected';
-  return `<section class="pp-card pp-form"><h1>${esc(a.title)}</h1><p class="muted">${esc(a.intro)}</p>
+  const tr = (myCountry() || 'TR') === 'TR';
+  const nav = (backAttr) => `<div class="pp-wizard-nav">${backAttr ? `<button type="button" class="secondary" ${backAttr}>${esc(w.back)}</button>` : ''}<button type="submit">${esc(w.next)}</button></div>`;
+  return `<section class="pp-card pp-form">${stepper(applyStep + 2)}<h1>${esc(a.title)}</h1>
+<p class="muted small"><span id="apply-country"></span> · <a href="#" id="country-change">${esc(w.change)}</a></p>
 ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}</div>` : ''}
-<form id="apply-form">
+<form id="apply-form" novalidate>
   <input type="hidden" name="invite_code" value="${esc(invite)}">
-  <h3>${esc(a.person)}</h3>
-  ${f(a.fullName, '<input name="full_name" autocomplete="name" required>')}
-  <label><span id="id-label">${esc(a.idNoTr)}</span><input name="id_no" inputmode="numeric" required></label>
-  <div class="pp-field"><span>${esc(a.birth)}</span><div class="pp-dob"><select name="birth_day" aria-label="${esc(a.birthDay)}"></select><select name="birth_month" aria-label="${esc(a.birthMonth)}"></select><select name="birth_year" aria-label="${esc(a.birthYear)}"></select></div></div>
-  <div class="pp-grid2 tight">${f(a.phone, '<input name="phone" type="tel" autocomplete="tel" required>')}<div class="pp-field"><span>${esc(a.country)}</span><div id="pk-apply-country"></div></div></div>
-  ${f(a.address, '<textarea name="address" rows="2" required></textarea>')}
-  <div class="pp-grid2 tight">${f(a.type, `<select name="entity_type"><option value="person">${esc(a.typePerson)}</option><option value="company">${esc(a.typeCompany)}</option></select>`)}${f(a.taxNo, '<input name="tax_no" inputmode="numeric">')}</div>
-  <h3>${esc(a.channel)}</h3>
-  ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..."></textarea>')}
-  ${f(a.followers, '<input name="followers" inputmode="numeric">')}
-  <h3>${esc(a.payment)}</h3>
-  ${f(a.holder, '<input name="holder" required>')}
-  <div id="pay-tr">${f(a.iban, '<input name="iban" placeholder="TR.. .... .... .... .... .... .." required>')}</div>
-  <div id="pay-foreign" hidden>
-    <div class="pp-grid2 tight">${f(a.bankName, '<input name="bank_name">')}<div class="pp-field"><span>${esc(a.bankCountry)}</span><div id="pk-bank-country"></div></div></div>
-    <div class="pp-grid2 tight">${f(a.swift, '<input name="swift_bic" autocapitalize="characters" maxlength="11">')}${f(a.account, '<input name="account_no">')}</div>
-    <p class="muted small">${esc(a.foreignNote)}</p>
-  </div>
-  <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
-  <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
-  <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
-  <p class="muted small">${esc(a.accuracy)}</p>
-  <button type="submit">${esc(a.submit)}</button>
-  <div class="msg" id="apply-msg"></div>
+  <fieldset data-step="1" hidden>
+    <h3>${esc(a.person)}</h3>
+    ${f(a.fullName, '<input name="full_name" autocomplete="name">')}
+    <label>${esc(tr ? a.idNoTr : a.idNoForeign)}<input name="id_no" ${tr ? 'inputmode="numeric" maxlength="11"' : 'autocapitalize="characters" maxlength="30"'}></label>
+    <div class="pp-field"><span>${esc(a.birth)}</span><div class="pp-dob"><select name="birth_day" aria-label="${esc(a.birthDay)}"></select><select name="birth_month" aria-label="${esc(a.birthMonth)}"></select><select name="birth_year" aria-label="${esc(a.birthYear)}"></select></div></div>
+    <label>${esc(a.phone)}<span class="pp-phone"><span class="pp-dial" id="apply-dial"></span><input name="phone" type="tel" autocomplete="tel-national"></span></label>
+    <label>${esc(a.address)}<textarea name="address" rows="2" placeholder="${esc(w.addressHint)}"></textarea></label>
+    ${f(a.type, `<select name="entity_type"><option value="person">${esc(a.typePerson)}</option><option value="company">${esc(a.typeCompany)}</option></select>`)}
+    <div id="tax-field" hidden>${f(a.taxNo, '<input name="tax_no">')}</div>
+    <div class="msg" data-step-msg></div>
+    ${nav('')}
+  </fieldset>
+  <fieldset data-step="2" hidden>
+    <h3>${esc(a.channel)}</h3>
+    ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..."></textarea>')}
+    ${f(a.followers, '<input name="followers" inputmode="numeric">')}
+    <div class="msg" data-step-msg></div>
+    ${nav('data-back')}
+  </fieldset>
+  <fieldset data-step="3" hidden>
+    <h3>${esc(a.payment)}</h3>
+    <p class="muted small">${esc(tr ? w.payTr : w.payForeign)}</p>
+    ${f(a.holder, '<input name="holder" autocomplete="name">')}
+    ${tr ? '' : `<div class="pp-field"><span>${esc(a.bankCountry)}</span><div id="pk-bank-country"></div></div>${f(a.bankName, '<input name="bank_name">')}${f(a.swift, '<input name="swift_bic" autocapitalize="characters" maxlength="11">')}<div id="code-field" hidden><label><span id="code-label"></span><input name="bank_code" autocapitalize="characters"></label></div>`}
+    <label><span id="account-label">${esc(a.iban)}</span><input name="account" autocapitalize="characters" autocomplete="off" placeholder="${tr ? 'TR.. .... .... .... .... .... ..' : ''}"></label>
+    <p class="muted small" id="account-hint"></p>
+    ${tr ? '' : `<p class="muted small">${esc(a.foreignNote)}</p>`}
+    <div class="msg" data-step-msg></div>
+    ${nav('data-back')}
+  </fieldset>
+  <fieldset data-step="4" hidden>
+    <h3>${esc(w.steps[5])}</h3>
+    <p class="muted">${esc(w.review)}</p>
+    <div id="apply-summary"></div>
+    <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
+    <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
+    <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
+    <p class="muted small">${esc(a.accuracy)}</p>
+    <div class="msg" id="apply-msg" data-step-msg></div>
+    <div class="pp-wizard-nav"><button type="button" class="secondary" data-back>${esc(w.back)}</button><button type="submit">${esc(a.submit)}</button></div>
+  </fieldset>
 </form></section>`;
 }
 
@@ -1153,6 +1209,7 @@ const ROUTES = {
   giris: { title: s.login.title, render: loginScreen, public: true },
   'iki-adim': { title: s.twoFactor.title, render: twoFactorScreen, public: true },
   basvuru: { title: s.apply.title, render: applyScreen, public: true },
+  ulke: { title: s.apply.wizard.countryTitle, render: countryScreen, public: true },
   yukleniyor: { title: s.live.loading, render: loadingScreen, public: true },
   kapali: { title: s.live.closedTitle, render: closedScreen, public: true },
   inceleniyor: { title: s.live.reviewTitle, render: reviewScreen, public: true },
@@ -1248,8 +1305,8 @@ const STAGE_ROUTE = { loading: 'yukleniyor', login: 'giris', mfa: 'iki-adim', cl
 
 function currentRoute() {
   const key = location.hash.replace(/^#\/?/, '').split('?')[0] || homeKey();
-  if (!SAMPLE && stage === 'login') return key === 'giris' ? 'giris' : 'tanitim';
-  if (!SAMPLE && stage !== 'panel') return key === 'tanitim' ? key : STAGE_ROUTE[stage];
+  if (!SAMPLE && stage === 'login') return key === 'giris' || key === 'ulke' ? key : 'tanitim';
+  if (!SAMPLE && stage !== 'panel') return key === 'tanitim' || (key === 'ulke' && stage === 'apply') ? key : STAGE_ROUTE[stage];
   if (SAMPLE && ROUTES[key]?.public) return key;
   if (!SAMPLE && ['tanitim', 'basvuru', 'inceleniyor'].includes(key) && (key === 'tanitim' || allowedKeys().includes(key))) return key;
   return ROUTES[key] && allowedKeys().includes(key) ? key : homeKey();
@@ -1677,73 +1734,221 @@ function bind(key) {
       await boot();
     });
   });
-  if ($('#pk-apply-country')) {
-    const form = $('#apply-form').elements;
-    // Türkiye: T.C. kimlik ve IBAN. Diğer ülkeler: pasaport ve uluslararası banka bilgileri
-    const onCountry = (code) => {
-      const tr = code === 'TR';
-      $('#id-label').textContent = tr ? s.apply.idNoTr : s.apply.idNoForeign;
-      form.id_no.inputMode = tr ? 'numeric' : 'text';
-      $('#pay-tr').hidden = !tr;
-      $('#pay-foreign').hidden = tr;
-      form.iban.required = tr;
-      for (const k of ['bank_name', 'swift_bic', 'account_no']) form[k].required = !tr;
-    };
-    onCountry('TR');
+  // ---- Başvuru: ülke seçimi ----
+  if ($('#pk-start-country')) {
     loadCountries().then((list) => {
-      const items = list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` }));
-      picker($('#pk-apply-country'), { name: 'country', items, value: 'TR', search: s.apply.countrySearch, empty: s.apply.notFound, onChange: onCountry });
-      picker($('#pk-bank-country'), { name: 'bank_country', items, placeholder: s.apply.bankCountry, search: s.apply.countrySearch, empty: s.apply.notFound });
+      const box = $('#pk-start-country');
+      if (!box) return;
+      picker(box, { name: 'start_country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: myCountry(), placeholder: s.apply.wizard.countryPh, search: s.apply.countrySearch, empty: s.apply.notFound });
     });
-    // Doğum tarihi: gün / ay / yıl (ay ve yıla göre gün sayısı değişir; 18 yaşından küçük yıl gösterilmez)
+    $('#country-next').addEventListener('click', () => {
+      const c = app.querySelector('input[name="start_country"]')?.value;
+      if (!c) {
+        $('#country-msg').textContent = s.apply.wizard.countryRequired;
+        $('#country-msg').className = 'msg error';
+        return;
+      }
+      store('wwp-ulke', c);
+      applyStep = 1;
+      applyDraft = {};
+      const target = !SAMPLE && stage === 'login' ? '#/giris' : '#/basvuru';
+      const lang = COUNTRY_LANG[c] ?? 'en';
+      if (lang !== LANG && W.langs?.[lang]) {
+        store('wwp-dil', lang);
+        location.href = langPath(lang) + target;
+      } else if (location.hash === target) rerender();
+      else location.hash = target;
+    });
+  }
+  // ---- Başvuru: adımlar ----
+  if ($('#apply-form')) {
+    const formEl = $('#apply-form');
+    const f = formEl.elements;
+    const country = myCountry() || 'TR';
+    const tr = country === 'TR';
+    const a = s.apply;
+    // Taslak yeniden çizimde korunur
+    for (const [k, v] of Object.entries(applyDraft)) {
+      const el = f[k];
+      if (!el || el.tagName === 'SELECT' && el.name.startsWith('birth_')) continue;
+      if (el.type === 'checkbox') el.checked = v;
+      else if (el.value !== undefined) el.value = v;
+    }
+    const remember = (e) => {
+      const el = e.target;
+      if (el?.name) applyDraft[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+    };
+    formEl.addEventListener('input', remember);
+    formEl.addEventListener('input', () => formEl.querySelectorAll('[data-step-msg]').forEach((m) => (m.textContent = '')));
+    formEl.addEventListener('change', remember);
+    // Doğum tarihi
     const opts = (ph, list) => `<option value="">${esc(ph)}</option>${list.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('')}`;
     const lastYear = new Date().getFullYear() - 18;
     const monthName = new Intl.DateTimeFormat(LOCALE, { month: 'long' });
-    form.birth_year.innerHTML = opts(s.apply.birthYear, Array.from({ length: 83 }, (_, i) => [lastYear - i, lastYear - i]));
-    form.birth_month.innerHTML = opts(s.apply.birthMonth, Array.from({ length: 12 }, (_, i) => [i + 1, monthName.format(new Date(2000, i, 1))]));
+    f.birth_year.innerHTML = opts(a.birthYear, Array.from({ length: 83 }, (_, i) => [lastYear - i, lastYear - i]));
+    f.birth_month.innerHTML = opts(a.birthMonth, Array.from({ length: 12 }, (_, i) => [i + 1, monthName.format(new Date(2000, i, 1))]));
     const paintDays = () => {
-      const days = new Date(Number(form.birth_year.value) || 2000, Number(form.birth_month.value) || 1, 0).getDate();
-      const keep = Math.min(Number(form.birth_day.value) || 0, days);
-      form.birth_day.innerHTML = opts(s.apply.birthDay, Array.from({ length: days }, (_, i) => [i + 1, i + 1]));
-      form.birth_day.value = keep ? String(keep) : '';
+      const days = new Date(Number(f.birth_year.value) || 2000, Number(f.birth_month.value) || 1, 0).getDate();
+      const keep = Math.min(Number(f.birth_day.value) || 0, days);
+      f.birth_day.innerHTML = opts(a.birthDay, Array.from({ length: days }, (_, i) => [i + 1, i + 1]));
+      f.birth_day.value = keep ? String(keep) : '';
     };
+    f.birth_year.value = applyDraft.birth_year ?? '';
+    f.birth_month.value = applyDraft.birth_month ?? '';
+    f.birth_day.innerHTML = opts(a.birthDay, Array.from({ length: 31 }, (_, i) => [i + 1, i + 1]));
+    f.birth_day.value = applyDraft.birth_day ?? '';
     paintDays();
-    form.birth_month.addEventListener('change', paintDays);
-    form.birth_year.addEventListener('change', paintDays);
-  }
-  $('#apply-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const msg = $('#apply-msg');
-    if (SAMPLE) {
-      msg.textContent = s.apply.preview;
-      msg.className = 'msg';
-      return;
-    }
-    const f = e.currentTarget.elements;
-    // Türkiye'deki başvuruda T.C. kimlik numarası denetlenir (sunucuda da aynı kural: _partner_tckn_gecerli)
-    if (f.country.value === 'TR' && !validTckn(f.id_no.value.trim())) {
-      msg.textContent = s.live.errors.tc_kimlik;
-      msg.className = 'msg error';
-      return;
-    }
-    if (!f.birth_year.value || !f.birth_month.value || !f.birth_day.value) {
-      msg.textContent = s.apply.birthRequired;
-      msg.className = 'msg error';
-      return;
-    }
-    const fields = Object.fromEntries(
-      ['full_name', 'id_no', 'phone', 'country', 'address', 'entity_type', 'tax_no', 'channel_links', 'followers', 'holder', 'invite_code'].map((k) => [k, f[k].value]),
-    );
-    const pad = (v) => String(v).padStart(2, '0');
-    fields.birth_date = `${f.birth_year.value}-${pad(f.birth_month.value)}-${pad(f.birth_day.value)}`;
-    if (f.country.value === 'TR') fields.iban = f.iban.value;
-    else Object.assign(fields, { iban: f.account_no.value, bank_name: f.bank_name.value, bank_country: f.bank_country.value, swift_bic: f.swift_bic.value });
-    for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) fields[k] = f[k].checked;
-    act(e.currentTarget.querySelector('button[type=submit]'), msg, async () => {
-      await live.apply(fields);
-      await boot();
+    f.birth_month.addEventListener('change', paintDays);
+    f.birth_year.addEventListener('change', paintDays);
+    // Şirketse vergi numarası
+    const paintEntity = () => ($('#tax-field').hidden = f.entity_type.value !== 'company');
+    paintEntity();
+    f.entity_type.addEventListener('change', paintEntity);
+    // Ödeme alanları: banka ülkesine göre
+    const paintBank = (cc) => {
+      const label = $('#account-label');
+      const hint = $('#account-hint');
+      const len = IBAN_LEN[cc];
+      const code = LOCAL_CODE[cc];
+      label.textContent = len ? a.iban : a.wizard.accountNo;
+      hint.textContent = len ? fmt(a.wizard.ibanHint, { cc, n: len }) : '';
+      f.account.placeholder = len ? `${cc}.. .... .... ....` : '';
+      if ($('#code-field')) {
+        $('#code-field').hidden = !code;
+        if (code) {
+          $('#code-label').textContent = code.label;
+          f.bank_code.maxLength = code.max;
+        }
+      }
+    };
+    let bankCountry = applyDraft.bank_country || (tr ? 'TR' : country.length === 2 ? country : '');
+    paintBank(tr ? 'TR' : bankCountry);
+    let dial = '';
+    loadCountries().then((list) => {
+      const me_ = list.find((c) => c.c === country);
+      if (!$('#apply-form')) return;
+      dial = me_?.d ?? '';
+      $('#apply-dial').textContent = `${me_?.f ?? ''} ${dial}`;
+      $('#apply-country').textContent = `${me_?.f ?? ''} ${LANG === 'tr' ? me_?.n ?? country : countryName(country) || country}`;
+      if ($('#pk-bank-country')) {
+        picker($('#pk-bank-country'), {
+          name: 'bank_country',
+          items: list.filter((c) => c.c.length === 2).map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })),
+          value: bankCountry,
+          placeholder: a.bankCountry,
+          search: a.countrySearch,
+          empty: a.notFound,
+          onChange: (v) => {
+            bankCountry = v;
+            applyDraft.bank_country = v;
+            paintBank(v);
+          },
+        });
+      }
     });
-  });
+    // Yazarken biçimlendirme
+    f.account.addEventListener('input', () => {
+      if (IBAN_LEN[tr ? 'TR' : bankCountry]) f.account.value = compact(f.account.value).replace(/(.{4})(?=.)/g, '$1 ');
+    });
+    if (f.swift_bic) f.swift_bic.addEventListener('input', () => (f.swift_bic.value = f.swift_bic.value.toUpperCase()));
+    // Adım gösterimi
+    const stepMsg = (text) => {
+      const m = formEl.querySelector(`fieldset[data-step="${applyStep}"] [data-step-msg]`);
+      m.textContent = text;
+      m.className = text ? 'msg error' : 'msg';
+    };
+    const phoneValue = () => `${dial}${f.phone.value.replace(/[^\d]/g, '').replace(/^0/, '')}`;
+    const birthValue = () => (f.birth_year.value && f.birth_month.value && f.birth_day.value ? `${f.birth_year.value}-${String(f.birth_month.value).padStart(2, '0')}-${String(f.birth_day.value).padStart(2, '0')}` : '');
+    const paintSummary = () => {
+      const acc = compact(f.account.value);
+      $('#apply-summary').innerHTML = [
+        [a.fullName, f.full_name.value],
+        [a.country, $('#apply-country').textContent],
+        [a.phone, phoneValue()],
+        [a.holder, f.holder.value],
+        [tr || IBAN_LEN[bankCountry] ? a.iban : a.wizard.accountNo, `•••• ${acc.slice(-4)}`],
+      ].map(([k, v]) => `<div class="pp-row"><span class="muted">${esc(k)}</span> <b>${esc(v)}</b></div>`).join('');
+    };
+    const showStep = (n) => {
+      applyStep = n;
+      formEl.querySelectorAll('fieldset[data-step]').forEach((x) => (x.hidden = Number(x.dataset.step) !== n));
+      const bar = app.querySelector('.pp-progress');
+      if (bar) bar.outerHTML = stepper(n + 2);
+      if (n === 4) paintSummary();
+    };
+    const E = s.live.errors;
+    const check = (n) => {
+      if (n === 1) {
+        if (f.full_name.value.trim().length < 3) return E.ad_soyad;
+        const id = f.id_no.value.trim();
+        if (tr ? !validTckn(id) : id.length < 5) return tr ? E.tc_kimlik : E.kimlik_no;
+        if (!birthValue()) return a.birthRequired;
+        if (f.phone.value.replace(/[^\d]/g, '').length < 7) return E.telefon;
+        if (f.address.value.trim().length < 10) return E.adres;
+        if (f.entity_type.value === 'company' && !f.tax_no.value.trim()) return E.vergi_no;
+      }
+      if (n === 3) {
+        if (f.holder.value.trim().length < 3) return E.hesap_sahibi;
+        const acc = compact(f.account.value);
+        if (tr) return /^TR\d{24}$/.test(acc) && validIban(acc) ? null : E.iban;
+        if (!/^[A-Z]{2}$/.test(bankCountry)) return E.banka_ulkesi;
+        if (f.bank_name.value.trim().length < 2) return E.banka_adi;
+        if (!/^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(compact(f.swift_bic.value))) return E.swift_kodu;
+        const code = LOCAL_CODE[bankCountry];
+        if (code && !code.re.test(compact(f.bank_code.value))) return E.banka_kodu;
+        const len = IBAN_LEN[bankCountry];
+        if (len ? acc.length !== len || !validIban(acc) : !/^[A-Z0-9]{5,34}$/.test(acc)) return E.hesap_no;
+      }
+      return null;
+    };
+    showStep(applyStep);
+    formEl.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => (stepMsg(''), showStep(applyStep - 1), window.scrollTo(0, 0))));
+    $('#country-change')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      store('wwp-ulke', null);
+      rerender();
+    });
+    const ERROR_STEP = { ad_soyad: 1, kimlik_no: 1, tc_kimlik: 1, yas_18: 1, telefon: 1, adres: 1, vergi_no: 1, iban: 3, hesap_no: 3, hesap_sahibi: 3, banka_adi: 3, banka_ulkesi: 3, swift_kodu: 3, banka_kodu: 3 };
+    formEl.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (SAMPLE) {
+        if (applyStep < 4) showStep(applyStep + 1);
+        else stepMsg(a.preview);
+        return;
+      }
+      const problem = check(applyStep);
+      if (problem) return stepMsg(problem);
+      stepMsg('');
+      if (applyStep < 4) {
+        showStep(applyStep + 1);
+        window.scrollTo(0, 0);
+        return;
+      }
+      const fields = Object.fromEntries(['full_name', 'id_no', 'address', 'entity_type', 'tax_no', 'channel_links', 'followers', 'holder', 'invite_code'].map((k) => [k, f[k].value]));
+      Object.assign(fields, { country, birth_date: birthValue(), phone: phoneValue(), iban: compact(f.account.value) });
+      if (!tr) Object.assign(fields, { bank_name: f.bank_name.value, bank_country: bankCountry, swift_bic: compact(f.swift_bic.value), bank_code: compact(f.bank_code.value) });
+      for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) fields[k] = f[k].checked;
+      const msg = $('#apply-msg');
+      act(e.target.querySelector('fieldset[data-step="4"] button[type=submit]'), msg, async () => {
+        try {
+          await live.apply(fields);
+        } catch (err) {
+          const key = Object.keys(ERROR_STEP).find((k) => String(err?.message ?? '').includes(k));
+          if (key) {
+            showStep(ERROR_STEP[key]);
+            stepMsg(errText(err));
+            window.scrollTo(0, 0);
+            return;
+          }
+          throw err;
+        }
+        store('wwp-ulke', null);
+        applyDraft = {};
+        applyStep = 1;
+        await boot();
+      });
+    });
+  }
 
   // Sözleşme / aydınlatma metni: açılır pencere (onay kutusunu değiştirmeden)
   $$('[data-legal]').forEach((a) =>

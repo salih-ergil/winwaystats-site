@@ -338,3 +338,18 @@ details.pp-group[open] > summary::after { transform: rotate(180deg); }
   .pp-pubbar { flex-wrap: wrap; gap: 8px; }
   .pp-pubbar nav { flex-wrap: wrap; min-width: 0; max-width: 100%; }
 }
+
+.pp-progress { margin-bottom: 18px; }
+.pp-progress-text { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.pp-progress-text b { color: var(--text); }
+.pp-progress-bar { height: 6px; border-radius: 6px; background: var(--border); overflow: hidden; }
+.pp-progress-bar span { display: block; height: 100%; border-radius: 6px; background: var(--green); transition: width .2s; }
+.pp-form fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width: 0; }
+.pp-form fieldset[hidden] { display: none; }
+.pp-wizard-nav { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+.pp-wizard-nav button { flex: 1; }
+.pp-phone { display: flex; gap: 8px; align-items: stretch; }
+.pp-phone input { flex: 1; min-width: 0; }
+.pp-dial { display: inline-flex; align-items: center; padding: 0 12px; border: 1px solid var(--border); border-radius: 12px; white-space: nowrap; color: var(--muted); }
+.pp-form .pp-row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 14px; overflow-wrap: anywhere; }
+.pp-form .pp-row b { text-align: right; }
