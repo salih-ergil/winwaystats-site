@@ -237,7 +237,7 @@ export function createLive(W) {
 
     // ---- Yönetici (RLS: partner_admins + aal2) ----
     async loadAdmin() {
-      const [partners, notes, priv, accts, payouts, settings, repApps, feedback, ledger, log, errs, checks] = await Promise.all([
+      const [partners, notes, priv, accts, payouts, settings, repApps, feedback, ledger, log, errs, checks, reviews] = await Promise.all([
         sb.from('partners').select(PARTNER_COLS).order('created_at', { ascending: false }).then(ok),
         rpc('admin_partner_notes'),
         sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,company_name,tax_office,company_reg_no,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
@@ -250,6 +250,7 @@ export function createLive(W) {
         sb.from('partner_admin_log').select('*').in('entity', ['partners', 'mfa_reset']).order('at', { ascending: false }).limit(500).then(ok),
         sb.from('partner_event_errors').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 7 * DAY).toISOString()),
         sb.from('partner_channel_checks').select('*').order('month', { ascending: false }).limit(5000).then(ok),
+        rpc('admin_partner_reviews'),
       ]);
       const byId = Object.fromEntries(priv.map((x) => [x.partner_id, x]));
       const acct = Object.fromEntries(accts.map((x) => [x.partner_id, x]));
@@ -266,6 +267,7 @@ export function createLive(W) {
         name,
         payouts: payouts.map((x) => ({ ...x, name: name[x.partner_id] ?? '–' })),
         repApps,
+        reviews,
         settings: Object.fromEntries(settings.map((x) => [x.key, x.value])),
         feedback,
         log,

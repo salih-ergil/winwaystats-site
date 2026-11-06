@@ -133,7 +133,8 @@ async function submitForm(e) {
       showErrors(f, { email: mailIssue === 'disposable' ? s.err.disposable : s.err.exists });
       return;
     }
-    const partnerCode = f.partner_code.value.trim().toUpperCase();
+    // Bağlantıyla gelen kod, kullanıcı kutuyu boşaltsa da geçerlidir (Salih, 2026-11-06); başka kod yazarsa yazdığı geçer
+    const partnerCode = f.partner_code.value.trim().toUpperCase() || code;
     email = f.email.value.trim();
     const { data, error } = await client.auth.signUp({
       email,

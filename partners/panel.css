@@ -373,3 +373,6 @@ details.pp-appcard .pill { margin-left: auto; }
 .pp-check-missing { padding: 8px 10px; border: 1px solid #e05a4e; border-radius: 10px; background: color-mix(in srgb, #e05a4e 10%, transparent); }
 .pp-countrylang { display: block; margin-top: 14px; }
 .pp-countrylang select { width: 100%; margin-top: 6px; }
+.pp-review { margin: 4px 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
+.pp-review .pp-sub { margin-top: 0; }
+.pp-list.pp-plain { list-style: none; padding-left: 0; }

@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=aa238e159a';
+import { createLive } from './live.js?v=862d2e6df2';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -1104,6 +1104,25 @@ function adminApplicationsTabs() {
   return `<div class="pp-seg" role="tablist">${btn('partner', A.appTabPartner)}${btn('rep', s.apply.rep.adminTitle)}</div>${tab === 'rep' ? adminRepAppsScreen() : adminApplicationsScreen()}`;
 }
 
+// Ön inceleme (Salih, 2026-11-06): sunucu kontrolleri ve kanal özeti; öneridir, kararı yönetici verir
+const REVIEW_REC = { approve: ['recApprove', 'active'], reject: ['recReject', 'cancelled'], manual: ['recManual', ''] };
+function reviewPill(r) {
+  const [key, cls] = REVIEW_REC[r?.recommendation] ?? [];
+  return key ? `<span class="pill ${cls}">${esc(s.adminLive.review[key])}</span>` : '';
+}
+function reviewBox(info) {
+  const R = s.adminLive.review;
+  if (!info) return '';
+  const line = (ok, yes, no) => `<li>${ok ? '✓' : '✗'} ${esc(ok ? yes : no)}</li>`;
+  const p = info.pre ?? {};
+  const r = info.review;
+  const channel = { ok: R.channelOk, unreachable: R.channelUnreachable, problem: R.channelProblem };
+  return `<div class="pp-review"><h4 class="pp-sub">${esc(R.title)} ${reviewPill(r)}</h4>
+  <ul class="pp-list small pp-plain">${line(p.adult, R.adult, R.adultNo)}${line(p.id_valid, R.idValid, R.idValidNo)}${line(p.holder_match, R.holder, R.holderNo)}${line(p.unique, R.unique, R.uniqueNo)}${line(p.followers_ok, R.followers, R.followersNo)}
+  ${r ? `<li>${r.channel_status === 'ok' ? '✓' : '✗'} ${esc(channel[r.channel_status] ?? '')}</li>${r.followers_seen != null ? `<li>${esc(fmt(R.seen, { n: r.followers_seen }))}</li>` : ''}${r.last_post_days != null ? `<li>${esc(fmt(R.lastPost, { n: r.last_post_days }))}</li>` : ''}` : `<li class="muted">${esc(R.pending)}</li>`}</ul>
+  ${r?.summary ? `<p class="small pp-pre">${esc(r.summary)}</p>` : ''}<p class="muted small">${esc(R.note)}</p></div>`;
+}
+
 function adminApplicationsScreen() {
   const A = s.adminLive;
   const list = (admin?.partners ?? []).filter((p) => p.status === 'application');
@@ -1133,9 +1152,12 @@ function adminApplicationsScreen() {
       const history = (admin.log ?? []).filter((l) => l.entity_id === p.id && l.entity === 'partners');
       const tries = history.filter((l) => l.after?.status === 'application' && l.before?.status !== 'application').length;
       const lastReject = history.find((l) => l.after?.status === 'rejected' && l.before?.status !== 'rejected');
+      const info = admin.reviews?.[p.id];
+      const suggested = info?.review?.recommendation;
       const hasRep = (admin.repApps ?? []).some((x) => x.partner_id === p.id && x.status === 'pending');
       return `<details class="pp-card pp-appcard" data-app="${p.id}" data-open-key="app-${p.id}"${openCards.has(`app-${p.id}`) ? ' open' : ''}>
-  <summary><span><b>${esc(v.company_name || v.full_name || p.partner_no)}</b><br><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))} · ${esc(v.country || '–')} · ${esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson)}</span></span>${tries > 1 ? `<span class="pill">${esc(fmt(A.reapply, { n: tries }))}</span>` : ''}${d0.length ? '<span class="pill cancelled">!</span>' : ''}</summary>
+  <summary><span><b>${esc(v.company_name || v.full_name || p.partner_no)}</b><br><span class="muted small">${esc(p.partner_no)} · ${date(Date.parse(p.created_at))} · ${esc(v.country || '–')} · ${esc(v.entity_type === 'company' ? s.apply.typeCompany : s.apply.typePerson)}</span></span>${reviewPill(info?.review)}${tries > 1 ? `<span class="pill">${esc(fmt(A.reapply, { n: tries }))}</span>` : ''}${d0.length ? '<span class="pill cancelled">!</span>' : ''}</summary>
+  ${reviewBox(info)}
   ${d0.map((d) => `<div class="notice">${esc(d)}</div>`).join('')}
   ${lastReject ? `<div class="notice">${esc(fmt(A.reapplyPrev, { date: date(Date.parse(lastReject.at)) }))}${lastReject.after.reject_code && lastReject.after.reject_code !== 'diger' ? ` ${esc(s.live.rejectReasonLabel)}: ${esc(s.live.rejectReasons[lastReject.after.reject_code] ?? '')}` : ''}</div>` : ''}
   ${hasRep ? `<div class="notice">${esc(A.repAlso)} <button type="button" class="secondary small" data-app-tab="rep">${esc(A.repAlsoBtn)}</button></div>` : ''}
@@ -1147,9 +1169,9 @@ function adminApplicationsScreen() {
   ${open ? '' : `<div class="pp-actions left"><button type="button" class="secondary small" data-reveal="${esc(p.id)}">${esc(A.reveal)}</button></div><p class="muted small">${esc(A.revealNote)}</p>`}
   <div class="pp-actions left">${v.id_doc_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_path)}">${esc(A.openDoc)}</button>` : ''}${v.id_doc_back_path ? `<button type="button" class="secondary small" data-doc="${esc(v.id_doc_back_path)}">${esc(A.openDocBack)}</button>` : ''}</div>
   <div class="pp-grid2 tight"><label>${esc(A.rate)}${rateSelect('data-rate', Number(me.settings?.default_rate ?? 0.1))}</label><label>${esc(A.note)}<input data-note></label></div>
-  <h4 class="pp-sub">${esc(A.checklist)}</h4>
-  ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}
-  <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
+  ${suggested === 'approve' ? '' : `<h4 class="pp-sub">${esc(A.checklist)}</h4>
+  ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}`}
+  <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}"${suggested === 'reject' && info?.review?.reject_code === k ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
   <div class="pp-actions left"><button type="button" data-decide-app="1">${esc(A.approve)}</button><button type="button" class="danger" data-decide-app="0">${esc(A.reject)}</button></div>
   <div class="msg" data-amsg></div>
 </details>`;
@@ -2298,7 +2320,7 @@ function bind(key) {
         return;
       }
       act(b, card.querySelector('[data-amsg]'), async () => {
-        const note = [card.querySelector('[data-note]').value, approve ? 'Kontrol listesi tamam' : ''].filter(Boolean).join(' · ');
+        const note = [card.querySelector('[data-note]').value, approve ? (card.querySelector('[data-check]') ? 'Kontrol listesi tamam' : 'Ön inceleme önerisiyle') : ''].filter(Boolean).join(' · ');
         await live.decideApplication(card.dataset.app, approve, rate, note || null, approve ? null : code, approve ? null : detail || null);
         await reload();
       });
