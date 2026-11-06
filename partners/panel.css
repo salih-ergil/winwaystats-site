@@ -206,7 +206,6 @@ ol.pp-toplist li span { flex: 1; }
 .pp-modal-body table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0; }
 .pp-modal-body th, .pp-modal-body td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
 .pp-modal-body blockquote { border-left: 3px solid var(--green); margin: 8px 0; padding: 4px 12px; color: var(--muted); }
-.pp-draft { background: var(--warn-bg); color: var(--yellow); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
 .pp-check a { color: var(--green); }
 /* Kurumsal bölüm (açılır kapanır) */
 .pp-corp { margin-top: 18px; }
