@@ -29,6 +29,15 @@ export function createLive(W) {
       if (error) throw error;
     },
     signOut: () => sb.auth.signOut(),
+    async requestReset(email, captchaToken) {
+      ok(await sb.auth.resetPasswordForEmail(email, { captchaToken: captchaToken ?? undefined }));
+    },
+    async verifyReset(email, token) {
+      ok(await sb.auth.verifyOtp({ email, token, type: 'recovery' }));
+    },
+    async updatePassword(password) {
+      ok(await sb.auth.updateUser({ password }));
+    },
     me: () => rpc('partner_me'),
 
     // ---- İki adımlı doğrulama (TOTP) ----

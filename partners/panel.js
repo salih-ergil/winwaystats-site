@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=6f502b611b';
+import { createLive } from './live.js?v=e15119eccd';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -23,6 +23,7 @@ let me = SAMPLE ? { settings: { default_rate: 0.1 } } : null;
 let admin = SAMPLE ? data.adminSample : null;
 let mfa = { factorId: null, qr: null, secret: null };
 let captchaToken = null;
+let forgot = null; // şifre sıfırlama adımı: { step: 'email' | 'code' | 'totp' | 'new', email, factorId }
 const app = document.getElementById('app');
 document.head.insertAdjacentHTML('beforeend', `<style>${PICKER_CSS}</style>`);
 
@@ -791,10 +792,62 @@ ${strip(P.faqTitle, 'sss')}
   <h2>${esc(P.ctaTitle)}</h2>
   <p class="muted">${esc(P.ctaText)}</p>
   <div class="pp-actions center"><a class="btn" href="${applyHref}">${esc(P.apply)}</a>${me && !SAMPLE ? '' : `<a class="btn secondary" href="/kayit/">${esc(P.createAccount)}</a>`}</div>
+  ${docsBlock()}
 </section>`;
 }
 
+const validTckn = (v) => {
+  if (!/^[1-9]\d{10}$/.test(v)) return false;
+  const d = [...v].map(Number);
+  const odd = d[0] + d[2] + d[4] + d[6] + d[8];
+  const even = d[1] + d[3] + d[5] + d[7];
+  return (((odd * 7 - even) % 10) + 10) % 10 === d[9] && (odd + even + d[9]) % 10 === d[10];
+};
+
+// Başvuru öncesi okunacak belgeler: giriş gerektirmez, açılır pencerede açılır
+const docsBlock = () => `<p class="small pp-docs"><b>${esc(s.login.docsTitle)}:</b> <a href="#" data-legal="sozlesme">${esc(s.apply.contractLink)}</a> · <a href="#" data-legal="aydinlatma">${esc(s.apply.privacyLink)}</a></p>`;
+
+// Şifre sıfırlama: e-posta → 6 haneli kod → (varsa) iki adımlı doğrulama → yeni şifre. Kod doğrulanınca oturum açılır;
+// iki adımlı doğrulaması olan hesapta şifre ancak bu kod da girildikten sonra değişir.
+function forgotScreen() {
+  const r = s.login.reset;
+  const back = `<p class="small"><a href="#" data-forgot="login">${esc(r.back)}</a></p>`;
+  if (forgot.step === 'email') {
+    return `<section class="pp-card pp-narrow"><h1>${esc(r.title)}</h1><p class="muted">${esc(r.intro)}</p>
+<form id="forgot-email">
+  <label>${esc(s.login.email)}<input name="email" type="email" autocomplete="email" value="${esc(forgot.email)}" required></label>
+  ${SAMPLE ? '' : '<div id="captcha"></div>'}
+  <button type="submit">${esc(r.send)}</button>
+  <div class="msg" id="forgot-msg"></div>
+</form>${back}</section>`;
+  }
+  if (forgot.step === 'code') {
+    return `<section class="pp-card pp-narrow"><h1>${esc(r.codeTitle)}</h1><p class="muted">${esc(fmt(r.codeText, { email: forgot.email }))}</p>
+<form id="forgot-code">
+  <label>${esc(r.code)}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="pp-code" required></label>
+  <button type="submit">${esc(r.verify)}</button>
+  <div class="msg" id="forgot-msg"></div>
+</form><p class="small"><a href="#" data-forgot="email">${esc(r.resend)}</a></p>${back}</section>`;
+  }
+  if (forgot.step === 'totp') {
+    return `<section class="pp-card pp-narrow"><h1>${esc(r.totpTitle)}</h1><p class="muted">${esc(s.live.verifyText)}</p>
+<form id="forgot-totp">
+  <label>${esc(s.twoFactor.code)}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="pp-code" required></label>
+  <button type="submit">${esc(r.verify)}</button>
+  <div class="msg" id="forgot-msg"></div>
+</form><p class="muted small">${esc(r.help)}</p></section>`;
+  }
+  return `<section class="pp-card pp-narrow"><h1>${esc(r.newTitle)}</h1><p class="muted">${esc(r.rules)}</p>
+<form id="forgot-new">
+  <label>${esc(r.password)}<input name="password" type="password" autocomplete="new-password" required></label>
+  <label>${esc(r.password2)}<input name="password2" type="password" autocomplete="new-password" required></label>
+  <button type="submit">${esc(r.save)}</button>
+  <div class="msg" id="forgot-msg"></div>
+</form></section>`;
+}
+
 function loginScreen() {
+  if (forgot) return forgotScreen();
   const l = s.login;
   return `<section class="pp-card pp-narrow"><h1>${esc(l.title)}</h1><p class="muted">${esc(l.intro)}</p>
 <form id="login-form">
@@ -804,8 +857,9 @@ function loginScreen() {
   <button type="submit">${esc(l.submit)}</button>
   <div class="msg" id="login-msg"></div>
 </form>
-<p class="muted small">${esc(l.forgot)}</p>
+<p class="small"><a href="#" data-forgot="email">${esc(l.forgot)}</a></p>
 <p class="small"><a href="/kayit/">${esc(s.promo.noAccount)}</a></p>
+${docsBlock()}
 ${SAMPLE ? `<div class="notice">${esc(l.preview)} <a href="#/ana-sayfa">${esc(l.toPanel)}</a></div>` : ''}</section>`;
 }
 
@@ -862,6 +916,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}</div>` : ''}
   <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
   <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
   <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
+  <p class="muted small">${esc(a.accuracy)}</p>
   <button type="submit">${esc(a.submit)}</button>
   <div class="msg" id="apply-msg"></div>
 </form></section>`;
@@ -1524,6 +1579,72 @@ function bind(key) {
     });
   });
   if ($('#captcha')) renderCaptcha();
+
+  // Şifre sıfırlama
+  $$('[data-forgot]').forEach((a) =>
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      forgot = a.dataset.forgot === 'login' ? null : { step: 'email', email: forgot?.email ?? '' };
+      captchaToken = null;
+      rerender();
+    }),
+  );
+  const forgotMsg = (text) => {
+    const msg = $('#forgot-msg');
+    msg.textContent = text;
+    msg.className = 'msg error';
+  };
+  $('#forgot-email')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const email = e.currentTarget.elements.email.value.trim();
+    if (window.turnstile && !captchaToken) return forgotMsg(s.live.captchaWait);
+    act(e.currentTarget.querySelector('button'), $('#forgot-msg'), async () => {
+      try {
+        await live.requestReset(email, captchaToken);
+      } catch (err) {
+        if (window.turnstile) window.turnstile.reset();
+        captchaToken = null;
+        throw err;
+      }
+      forgot = { step: 'code', email };
+      captchaToken = null;
+      rerender();
+    });
+  });
+  $('#forgot-code')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = e.currentTarget.elements.code.value.trim();
+    if (!/^\d{6}$/.test(code)) return forgotMsg(s.login.reset.codeInvalid);
+    act(e.currentTarget.querySelector('button'), $('#forgot-msg'), async () => {
+      await live.verifyReset(forgot.email, code);
+      const m = await live.mfa();
+      forgot = m.verified && m.current !== 'aal2' ? { ...forgot, step: 'totp', factorId: m.verified.id } : { ...forgot, step: 'new' };
+      rerender();
+    });
+  });
+  $('#forgot-totp')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = e.currentTarget.elements.code.value.trim();
+    if (!/^\d{6}$/.test(code)) return forgotMsg(s.twoFactor.invalid);
+    act(e.currentTarget.querySelector('button'), $('#forgot-msg'), async () => {
+      await live.verify(forgot.factorId, code);
+      forgot = { ...forgot, step: 'new' };
+      rerender();
+    });
+  });
+  $('#forgot-new')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const f = e.currentTarget.elements;
+    const pw = f.password.value;
+    // Uygulamadaki şifre kuralıyla aynı (src/features/auth/validation.ts)
+    if (pw.length < 8 || !/[a-zçğıöşü]/.test(pw) || !/[A-ZÇĞİÖŞÜ]/.test(pw) || !/\d/.test(pw) || !/[^A-Za-z0-9çğıöşüÇĞİÖŞÜ\s]/.test(pw)) return forgotMsg(s.login.reset.weak);
+    if (pw !== f.password2.value) return forgotMsg(s.login.reset.mismatch);
+    act(e.currentTarget.querySelector('button'), $('#forgot-msg'), async () => {
+      await live.updatePassword(pw);
+      forgot = null;
+      await boot();
+    });
+  });
   $('#tf-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const v = $('#tf-code').value.trim();
@@ -1556,6 +1677,12 @@ function bind(key) {
       return;
     }
     const f = e.currentTarget.elements;
+    // Türkiye'deki başvuruda T.C. kimlik numarası denetlenir (sunucuda da aynı kural: _partner_tckn_gecerli)
+    if (f.country.value === 'TR' && !validTckn(f.id_no.value.trim())) {
+      msg.textContent = s.live.errors.tc_kimlik;
+      msg.className = 'msg error';
+      return;
+    }
     const file = f.id_doc.files[0];
     const back = f.id_doc_back.files[0];
     if (!file || !back || file.size > 5 * 1024 * 1024 || back.size > 5 * 1024 * 1024) {
