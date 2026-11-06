@@ -923,6 +923,13 @@ const validVkn = (v) => {
   }
   return (10 - (t % 10)) % 10 === Number(v[9]);
 };
+// Kanal bağlantıları: https:// yazılmadıysa eklenir. Sunucudaki _partner_kanal_gecerli ile aynı kural
+const SOCIAL_HOME = /^https?:\/\/(www\.|m\.)?(t\.me|telegram\.me|instagram\.com|youtube\.com|youtu\.be|x\.com|twitter\.com|tiktok\.com|facebook\.com|twitch\.tv)\/?$/i;
+const channelLinks = (v) => {
+  const list = v.trim().split(/[\s,]+/).filter(Boolean).map((x) => (/^https?:\/\//i.test(x) ? x : `https://${x}`));
+  const ok = list.length > 0 && v.length <= 1000 && list.every((x) => /^https?:\/\/([a-z0-9-]+\.)+[a-z]{2,}(\/\S*)?$/i.test(x) && !SOCIAL_HOME.test(x));
+  return ok ? list.join('\n') : null;
+};
 const compact = (v) => v.replace(/[\s-]/g, '').toUpperCase();
 // GDPR bilgilendirmesi gösterilen ülkeler: Avrupa Ekonomik Alanı, Birleşik Krallık, İsviçre
 const GDPR_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
@@ -989,8 +996,9 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
   </fieldset>
   <fieldset data-step="2" hidden>
     <h3>${esc(a.channel)}</h3>
-    ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..."></textarea>')}
-    ${f(a.followers, '<input name="followers" inputmode="numeric">')}
+    ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..." autocapitalize="off" spellcheck="false"></textarea>')}
+    <p class="muted small">${esc(w.channelHint)}</p>
+    ${f(a.followers, '<input name="followers" inputmode="numeric" maxlength="9">')}
     <div class="msg" data-step-msg></div>
     ${nav('data-back')}
   </fieldset>
@@ -2014,6 +2022,22 @@ function bind(key) {
         if (f.phone.value.replace(/[^\d]/g, '').length < 7) return E.telefon;
         if (f.address.value.trim().length < 10) return E.adres;
       }
+      if (n === 2) {
+        const links = channelLinks(f.channel_links.value);
+        if (!links) return E.kanal_baglanti;
+        f.channel_links.value = links;
+        if (!/^\d{1,9}$/.test(f.followers.value.trim())) return E.kanal_takipci;
+      }
+      if (n === 4) {
+        // Zorunlu onaylar: eksikler tek tek yazılır ve kutular vurgulanır
+        const need = [['accept_age', a.wizard.consentAge], ['accept_contract', a.contractLink], ['accept_privacy', a.privacyLink]];
+        need.forEach(([k]) => f[k].closest('label').classList.toggle('pp-check-missing', !f[k].checked));
+        const missing = need.filter(([k]) => !f[k].checked);
+        if (missing.length) {
+          f[missing[0][0]].closest('label').scrollIntoView({ block: 'center', behavior: 'smooth' });
+          return `${a.wizard.consentIntro}\n${missing.map(([, label]) => `• ${label}`).join('\n')}`;
+        }
+      }
       if (n === 3) {
         if (f.holder.value.trim().length < 3) return E.hesap_sahibi;
         const acc = compact(f.account.value);
@@ -2044,7 +2068,8 @@ function bind(key) {
       e.preventDefault();
       toCountry();
     });
-    const ERROR_STEP = { sirket_adi: 1, vergi_dairesi: 1, sirket_adresi: 1, ad_soyad: 1, kimlik_no: 1, tc_kimlik: 1, yas_18: 1, telefon: 1, adres: 1, vergi_no: 1, iban: 3, hesap_no: 3, hesap_sahibi: 3, banka_adi: 3, banka_ulkesi: 3, swift_kodu: 3, banka_kodu: 3 };
+    for (const k of ['accept_age', 'accept_contract', 'accept_privacy']) f[k].addEventListener('change', () => f[k].closest('label').classList.toggle('pp-check-missing', !f[k].checked));
+    const ERROR_STEP = { kanal_baglanti: 2, kanal_takipci: 2, sirket_adi: 1, vergi_dairesi: 1, sirket_adresi: 1, ad_soyad: 1, kimlik_no: 1, tc_kimlik: 1, yas_18: 1, telefon: 1, adres: 1, vergi_no: 1, iban: 3, hesap_no: 3, hesap_sahibi: 3, banka_adi: 3, banka_ulkesi: 3, swift_kodu: 3, banka_kodu: 3 };
     formEl.addEventListener('submit', (e) => {
       e.preventDefault();
       if (SAMPLE) {
