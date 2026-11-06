@@ -1169,16 +1169,53 @@ function adminRepAppsScreen() {
 }
 
 // Yönetici işlem kaydından bir partnere ait son değişiklikler (alan: önce → sonra)
+// Değişiklik kaydını yönetici için cümleye çevirir; kimlik, tarih gibi teknik alanlar gösterilmez
+function logSentences(l) {
+  const A = s.adminLive;
+  const T = A.logText;
+  if (l.entity === 'mfa_reset') return [T.mfa];
+  if (!l.before) return [T.applied];
+  const b = l.before;
+  const n = l.after ?? {};
+  const changed = (k) => JSON.stringify(b[k] ?? null) !== JSON.stringify(n[k] ?? null);
+  const pct = (v) => (v == null ? '–' : pctRate(Number(v)));
+  const out = [];
+  if (changed('status')) out.push(fmt(T.status, { a: A.statuses[b.status] ?? b.status ?? '–', b: A.statuses[n.status] ?? n.status ?? '–' }));
+  if (changed('reject_code') && n.reject_code && n.reject_code !== 'diger') out.push(fmt(T.reason, { x: s.live.rejectReasons[n.reject_code] ?? n.reject_code }));
+  if (changed('reject_detail') && n.reject_detail) out.push(fmt(n.reject_code === 'diger' ? T.reason : T.note, { x: n.reject_detail }));
+  if (changed('rate')) out.push(fmt(T.rate, { a: pct(b.rate), b: pct(n.rate) }));
+  if (changed('rep_rate')) out.push(fmt(T.repRate, { a: pct(b.rep_rate), b: pct(n.rep_rate) }));
+  if (changed('is_rep')) out.push(n.is_rep ? T.repOn : T.repOff);
+  if (changed('rep_id')) out.push(fmt(T.repOf, { x: n.rep_id ? admin?.name?.[n.rep_id] ?? '–' : '–' }));
+  if (changed('marketing_consent')) out.push(n.marketing_consent ? T.consentOn : T.consentOff);
+  if (changed('domestic')) out.push(n.domestic ? T.domesticOn : T.domesticOff);
+  if (changed('contract_version') && n.contract_version) out.push(fmt(T.contract, { x: n.contract_version }));
+  if (changed('admin_note')) out.push(T.adminNote);
+  if (changed('trial')) out.push(n.trial ? T.trialOn : T.trialOff);
+  if (changed('security_locked_at')) out.push(n.security_locked_at ? T.lockOn : T.lockOff);
+  if (changed('rep_auto_assign')) out.push(n.rep_auto_assign ? T.autoOn : T.autoOff);
+  if (changed('member_bonus_cap')) out.push(T.cap);
+  if (changed('balance_waived_at') && n.balance_waived_at) out.push(T.waived);
+  if (changed('invite_code') && n.invite_code) out.push(T.invite);
+  return out;
+}
+
 function logList(id) {
   const A = s.adminLive;
-  const rows = (admin?.log ?? []).filter((l) => l.entity_id === id).slice(0, 10);
-  if (!rows.length) return `<p class="muted small">${esc(A.logEmpty)}</p>`;
-  const skip = new Set(['status_changed_at', 'approved_at', 'created_at']);
-  return `<ul class="pp-list small">${rows
-    .map((l) => {
-      const ch = Object.keys(l.after ?? {}).filter((k) => !skip.has(k) && JSON.stringify(l.before?.[k]) !== JSON.stringify(l.after[k]));
-      return `<li>${esc(new Date(l.at).toLocaleString(LOCALE))}: ${esc(ch.map((k) => `${k}: ${l.before?.[k] ?? '–'} → ${l.after[k] ?? '–'}`).join(', ') || s.adminLive.logCreated)}</li>`;
-    })
+  // Aynı saniyedeki kayıtlar (ör. başvuru ve izin) tek satırda
+  const groups = [];
+  for (const l of (admin?.log ?? []).filter((x) => x.entity_id === id)) {
+    const text = logSentences(l);
+    if (!text.length) continue;
+    const when = new Date(l.at).toLocaleString(LOCALE);
+    const last = groups[groups.length - 1];
+    if (last?.when === when) last.text = [...text, ...last.text];
+    else groups.push({ when, text });
+  }
+  if (!groups.length) return `<p class="muted small">${esc(A.logEmpty)}</p>`;
+  return `<ul class="pp-list small">${groups
+    .slice(0, 10)
+    .map((g) => `<li><span class="muted">${esc(g.when)}</span><br>${g.text.map(esc).join('<br>')}</li>`)
     .join('')}</ul>`;
 }
 
@@ -1216,7 +1253,7 @@ function adminPartnersScreen() {
   const form = edit
     ? `<section class="pp-card" id="pedit" data-id="${edit.id}"><h3>${esc(edit.priv.full_name || edit.partner_no)}</h3>
   <div class="pp-grid2 tight">
-    <label>Durum<select name="status">${['approved', 'suspended', 'terminated'].map((k) => `<option value="${k}"${edit.status === k ? ' selected' : ''}>${esc(A.statuses[k])}</option>`).join('')}</select></label>
+    <label>${esc(A.partnerCols[2])}<select name="status"${edit.status === 'rejected' ? ' disabled' : ''}>${(edit.status === 'rejected' ? ['rejected'] : ['approved', 'suspended', 'terminated']).map((k) => `<option value="${k}"${edit.status === k ? ' selected' : ''}>${esc(A.statuses[k])}</option>`).join('')}</select></label>
     <label>${esc(A.rate)}${rateSelect('name="rate"', Number(edit.rate))}</label>
     <label>${esc(A.repOf)}<select name="rep_id"><option value="">${esc(A.noneRep)}</option>${reps.filter((r) => r.id !== edit.id).map((r) => `<option value="${r.id}"${edit.rep_id === r.id ? ' selected' : ''}>${esc(r.priv.full_name || r.partner_no)}</option>`).join('')}</select></label>
     <label>${esc(A.note)}<input name="admin_note" value="${esc(edit.admin_note ?? '')}"></label>
@@ -1224,14 +1261,14 @@ function adminPartnersScreen() {
   <label class="pp-check"><input type="checkbox" name="is_rep"${edit.is_rep ? ' checked' : ''}> ${esc(A.isRep)}</label>
   <label class="pp-check"><input type="checkbox" name="trial"${edit.trial ? ' checked' : ''}> ${esc(A.trial)}</label>
   <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" id="pmsg"></div>
-  <h4 class="pp-sub">${esc(A.channelHistory)}</h4>${
+  ${!CHANNEL_CHECK_OPEN ? '' : `<h4 class="pp-sub">${esc(A.channelHistory)}</h4>${
     (admin.checks ?? []).filter((c) => c.partner_id === edit.id).length
       ? `<ul class="pp-list small">${admin.checks
           .filter((c) => c.partner_id === edit.id)
           .map((c) => `<li>${esc(new Date(c.month).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' }))}: ${c.betting_ads ? '🚩 ' + esc(s.rep.yes) : esc(s.rep.no)}${c.note ? ` · ${esc(c.note)}` : ''}</li>`)
           .join('')}</ul>`
       : `<p class="muted small">${esc(A.logEmpty)}</p>`
-  }
+  }`}
   <h4 class="pp-sub">${esc(A.log)}</h4>${logList(edit.id)}</section>`
     : '';
   const dropCheck = (x) => (CHANNEL_CHECK_OPEN ? x : x.filter((_, i) => i !== 3));
@@ -2347,7 +2384,7 @@ function bind(key) {
     const box = $('#pedit');
     const q = (n) => box.querySelector(`[name=${n}]`);
     const patch = {
-      status: q('status').value,
+      ...(q('status').disabled ? {} : { status: q('status').value }), // reddedilen başvuru bu formdan onaylanamaz
       rate: Number(q('rate').value),
       rep_id: q('rep_id').value,
       admin_note: q('admin_note').value,
