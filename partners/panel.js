@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=512f03c545';
+import { createLive } from './live.js?v=15956d7b96';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -955,7 +955,7 @@ function applyScreen() {
   const nav = (backAttr) => `<div class="pp-wizard-nav">${backAttr ? `<button type="button" class="secondary" ${backAttr}>${esc(w.back)}</button>` : ''}<button type="submit">${esc(w.next)}</button></div>`;
   return `<section class="pp-card pp-form">${stepper(applyStep + 2)}<h1>${esc(a.title)}</h1>
 <p class="muted small"><span id="apply-country"></span> · <a href="#" id="country-change">${esc(w.change)}</a></p>
-${rejected ? `<div class="notice">${esc(s.live.rejectedText)}</div>` : ''}
+${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject_code && s.live.rejectReasons[me.partner.reject_code] && me.partner.reject_code !== 'diger' ? `<br><b>${esc(s.live.rejectReasonLabel)}:</b> ${esc(s.live.rejectReasons[me.partner.reject_code])}` : ''}${me.partner.reject_detail ? `<br><b>${esc(me.partner.reject_code === 'diger' ? s.live.rejectReasonLabel : s.live.rejectNoteLabel)}:</b> ${esc(me.partner.reject_detail)}` : ''}</div>` : ''}
 <form id="apply-form" novalidate>
   <input type="hidden" name="invite_code" value="${esc(invite)}">
   <fieldset data-step="1" hidden>
@@ -1075,6 +1075,7 @@ function adminApplicationsScreen() {
   <div class="pp-grid2 tight"><label>${esc(A.rate)}${rateSelect('data-rate', Number(me.settings?.default_rate ?? 0.1))}</label><label>${esc(A.note)}<input data-note></label></div>
   <h4 class="pp-sub">${esc(A.checklist)}</h4>
   ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}
+  <div class="pp-grid2 tight"><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
   <div class="pp-actions left"><button type="button" data-decide-app="1">${esc(A.approve)}</button><button type="button" class="danger" data-decide-app="0">${esc(A.reject)}</button></div>
   <div class="msg" data-amsg></div>
 </section>`;
@@ -2097,9 +2098,17 @@ function bind(key) {
         m.className = 'msg error';
         return;
       }
+      const code = card.querySelector('[data-reject]').value;
+      const detail = card.querySelector('[data-reject-detail]').value.trim();
+      if (!approve && (!code || (code === 'diger' && detail.length < 5))) {
+        const m = card.querySelector('[data-amsg]');
+        m.textContent = !code ? s.live.errors.red_gerekcesi : s.live.errors.red_detay;
+        m.className = 'msg error';
+        return;
+      }
       act(b, card.querySelector('[data-amsg]'), async () => {
         const note = [card.querySelector('[data-note]').value, approve ? 'Kontrol listesi tamam' : ''].filter(Boolean).join(' · ');
-        await live.decideApplication(card.dataset.app, approve, rate, note || null);
+        await live.decideApplication(card.dataset.app, approve, rate, note || null, approve ? null : code, approve ? null : detail || null);
         await reload();
       });
     }),

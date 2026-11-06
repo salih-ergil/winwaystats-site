@@ -5,6 +5,8 @@
 const { createClient } = window.supabase;
 
 const DAY = 86400000;
+// Partnerin okuyabildiği sütunlar: yöneticinin iç notu (admin_note) burada yok, yönetici admin_partner_notes ile okur
+const PARTNER_COLS = 'id,user_id,partner_no,status,is_rep,rate,rep_id,rep_linked_by,rep_auto_assign,invite_code,domestic,member_bonus_cap,contract_version,contract_accepted_at,created_at,approved_at,status_changed_at,trial,rep_rate,rep_below_months,balance_waived_at,device_hash,reject_code,reject_detail';
 const n = (v) => Number(v ?? 0);
 const ts = (v) => (v ? Date.parse(v) : null);
 
@@ -73,7 +75,7 @@ export function createLive(W) {
     async loadPartner(me) {
       const session = await live.session();
       const uid = session.user.id;
-      const p = ok(await sb.from('partners').select('*').eq('user_id', uid).single());
+      const p = ok(await sb.from('partners').select(PARTNER_COLS).eq('user_id', uid).single());
       const joined = ts(p.approved_at) ?? ts(p.created_at);
       const [priv, acct, camps, ledger, payouts, users, clicks, myRep, prof] = await Promise.all([
         sb.from('partner_private').select('partner_id,full_name,country,entity_type').eq('partner_id', p.id).maybeSingle().then(ok),
@@ -219,8 +221,9 @@ export function createLive(W) {
 
     // ---- Yönetici (RLS: partner_admins + aal2) ----
     async loadAdmin() {
-      const [partners, priv, accts, payouts, settings, feedback, ledger, log, errs, checks] = await Promise.all([
-        sb.from('partners').select('*').order('created_at', { ascending: false }).then(ok),
+      const [partners, notes, priv, accts, payouts, settings, feedback, ledger, log, errs, checks] = await Promise.all([
+        sb.from('partners').select(PARTNER_COLS).order('created_at', { ascending: false }).then(ok),
+        rpc('admin_partner_notes'),
         sb.from('partner_private').select('partner_id,full_name,id_no_ozet,phone_ozet,country,entity_type,company_name,tax_office,company_reg_no,channel_links,followers,id_doc_path,id_doc_back_path,updated_at').then(ok),
         sb.from('partner_payout_accounts').select('id,partner_id,iban_ozet,iban_son4,holder,bank_name,bank_country,swift_bic,bank_code,active,created_at').eq('active', true).then(ok),
         sb.from('partner_payouts').select('id,partner_id,period,amount_try,withholding_try,net_try,iban_son4,holder,status,created_at,approved_at,paid_at').order('created_at', { ascending: false }).then(ok),
@@ -239,7 +242,7 @@ export function createLive(W) {
         if (l.status === 'available') b.available += n(l.amount_try);
         else if (l.status !== 'in_payout') b.pending += n(l.amount_try);
       }
-      const list = partners.map((p) => ({ ...p, priv: byId[p.id] ?? {}, account: acct[p.id] ?? null, balance: bal[p.id] ?? { available: 0, pending: 0 } }));
+      const list = partners.map((p) => ({ ...p, admin_note: notes[p.id] ?? '', priv: byId[p.id] ?? {}, account: acct[p.id] ?? null, balance: bal[p.id] ?? { available: 0, pending: 0 } }));
       const name = Object.fromEntries(list.map((p) => [p.id, p.priv.full_name || p.partner_no]));
       return {
         partners: list,
@@ -264,7 +267,7 @@ export function createLive(W) {
     reveal: (id) => rpc('admin_partner_reveal', { p_partner: id }),
     exportPayouts: (kind) => rpc('admin_payout_export', { p_tur: kind }),
     docUrl: async (path) => ok(await sb.storage.from('partner-belgeler').createSignedUrl(path, 300)).signedUrl,
-    decideApplication: (id, approve, rate, note) => rpc('admin_partner_decide', { p_partner: id, p_approve: approve, p_rate: rate, p_note: note }),
+    decideApplication: (id, approve, rate, note, code, detail) => rpc('admin_partner_decide', { p_partner: id, p_approve: approve, p_rate: rate, p_note: note, p_reject_code: code, p_reject_detail: detail }),
     updatePartner: (id, patch) => rpc('admin_partner_update', { p_partner: id, p: patch }),
     setPayout: (id, status) => rpc('admin_payout_set', { p_id: id, p_status: status }),
     setSetting: (key, value) => rpc('admin_setting_set', { p_key: key, p_value: value }),
