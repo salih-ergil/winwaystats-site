@@ -6,7 +6,7 @@ const { createClient } = window.supabase;
 
 const DAY = 86400000;
 // Partnerin okuyabildiği sütunlar: yöneticinin iç notu (admin_note) burada yok, yönetici admin_partner_notes ile okur
-const PARTNER_COLS = 'id,user_id,partner_no,status,is_rep,rate,rep_id,rep_linked_by,rep_auto_assign,invite_code,domestic,member_bonus_cap,contract_version,contract_accepted_at,created_at,approved_at,status_changed_at,trial,rep_rate,rep_below_months,balance_waived_at,device_hash,reject_code,reject_detail,marketing_consent,marketing_consent_at,marketing_consent_surum';
+const PARTNER_COLS = 'id,user_id,partner_no,status,is_rep,rate,rep_id,rep_linked_by,rep_auto_assign,invite_code,domestic,member_bonus_cap,contract_version,contract_accepted_at,created_at,approved_at,status_changed_at,trial,rep_rate,rep_below_months,balance_waived_at,device_hash,reject_code,reject_detail,marketing_consent,marketing_consent_at,marketing_consent_surum,security_locked_at';
 const n = (v) => Number(v ?? 0);
 const ts = (v) => (v ? Date.parse(v) : null);
 
@@ -65,7 +65,6 @@ export function createLive(W) {
 
     // ---- Partner işlemleri ----
     createCampaign: (name) => rpc('partner_campaign_create', { p_name: name }),
-    repInfo: () => rpc('partner_rep_info_request'),
     async repApply(fields, file) {
       const session = await live.session();
       const path = `${session.user.id}/cv-${Date.now()}.pdf`;
@@ -267,6 +266,14 @@ export function createLive(W) {
         errors: errs.count ?? 0,
         checks,
       };
+    },
+    async emergencyLock(token) {
+      const { data, error } = await sb.functions.invoke('partner-yonetim', { body: { action: 'acil_kilit', token } });
+      return !error && data?.ok === true;
+    },
+    async emergencyUnlock(partnerId) {
+      const { data, error } = await sb.functions.invoke('partner-yonetim', { body: { action: 'kilit_kaldir', partner_id: partnerId } });
+      if (error || !data?.ok) throw new Error(data?.error ?? 'kilit_yok');
     },
     async resetMfa(partnerId) {
       const { data, error } = await sb.functions.invoke('partner-yonetim', { body: { action: 'reset_mfa', partner_id: partnerId } });

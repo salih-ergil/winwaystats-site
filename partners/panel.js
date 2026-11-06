@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=294aff6dd9';
+import { createLive } from './live.js?v=7e4a2e7b8c';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -26,6 +26,7 @@ document.querySelectorAll('link[media="print"]').forEach((l) => (l.media = 'all'
 let captchaToken = null;
 const openCards = new Set(); // açık başvuru kartları
 const repDetails = {}; // açılan temsilcilik başvurusu metinleri (sadece bellekte)
+let lockDoneFlag = false;
 const revealed = {}; // yöneticinin açtığı şifreli alanlar (sadece bellekte)
 let forgot = null; // şifre sıfırlama adımı: { step: 'email' | 'code' | 'totp' | 'new', email, factorId }
 const app = document.getElementById('app');
@@ -1011,7 +1012,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <label class="pp-check"><input type="checkbox" name="accept_age"> ${esc(a.age)}</label>
     <label class="pp-check"><input type="checkbox" name="accept_contract"> <span><a href="#" data-legal="sozlesme">${esc(a.contractLink)}</a>${esc(a.contractRest)}</span></label>
     <label class="pp-check"><input type="checkbox" name="accept_privacy"> <span><a href="#" data-legal="aydinlatma">${esc(a.privacyLink)}</a>${esc(a.privacyRest)}</span></label>
-    <div class="pp-repinfo"><button type="button" class="secondary small" id="rep-info-btn">${esc(a.rep.btn)}</button><div class="notice small" id="rep-info" hidden><b>${esc(a.rep.infoTitle)}</b><br>${esc(a.rep.info)}<div id="rep-info-msg"></div></div></div>
+    <div class="pp-repbox"><label class="pp-check"><input type="checkbox" name="rep_info"> <span><b>${esc(a.rep.repCheck)}</b></span></label><div id="rep-info" hidden><p class="small"><b>${esc(a.rep.infoTitle)}</b><br>${esc(a.rep.info)}</p><p class="small muted">${esc(a.rep.infoMail)}</p></div></div>
     <label class="pp-check"><input type="checkbox" name="accept_marketing"> <span>${esc(a.marketing)}</span></label>
     ${GDPR_COUNTRIES.includes(myCountry()) ? `<p class="small">${esc(a.gdprRest)} <a href="#" data-legal="gdpr">${esc(a.gdprLink)}</a></p>` : ''}
     <p class="muted small">${esc(a.accuracy)}</p>
@@ -1026,6 +1027,14 @@ const stateScreen = (title, text) => `<section class="pp-card pp-narrow"><h1>${e
 const loadingScreen = () => stateScreen(s.live.loading, '');
 const closedScreen = () => stateScreen(s.live.closedTitle, s.live.closedText);
 const reviewScreen = () => `<section class="pp-card pp-narrow"><h1>${esc(s.live.reviewTitle)}</h1><p class="muted">${esc(fmt(s.live.reviewText, { no: me?.partner?.partner_no ?? '' }))}</p>${me?.partner?.rep_application?.status ? '' : `<div class="pp-actions left"><a class="btn secondary" href="#/temsilcilik">${esc(s.apply.rep.cta)}</a></div>`}${me?.partner?.rep_application?.status ? `<p class="small"><a href="#/temsilcilik">${esc(s.apply.rep.menu)}</a></p>` : ''}</section>`;
+// Acil kilit: değişiklik e-postasındaki bağlantı; giriş gerektirmez. Bağlantı adres satırında sunucuya gitmeyen # bölümünde
+function lockScreen() {
+  const r = s.apply.rep;
+  const t = new URLSearchParams(location.hash.split('?')[1] || '').get('t') || '';
+  if (lockDoneFlag) return stateScreen(r.lockTitle, r.lockDone);
+  if (!/^[a-f0-9]{64}$/.test(t)) return stateScreen(r.lockTitle, r.lockInvalid);
+  return `<section class="pp-card pp-narrow"><h1>${esc(r.lockTitle)}</h1><p class="muted">${esc(r.lockText)}</p><div class="pp-actions left"><button type="button" class="danger" id="lock-btn">${esc(r.lockBtn)}</button></div><div class="msg" id="lock-msg"></div></section>`;
+}
 // Temsilcilik başvurusu: yeni hesap gerekmez, partner kaydına bağlıdır
 function repApplyScreen() {
   const r = s.apply.rep;
@@ -1178,7 +1187,7 @@ function adminPartnersScreen() {
   const rows = list.map((p) => [
     `<span class="pp-mono">${esc(p.partner_no)}</span>`,
     `<b>${esc(p.priv.full_name || '–')}</b>`,
-    esc(A.statuses[p.status] ?? p.status),
+    `${esc(A.statuses[p.status] ?? p.status)}${p.security_locked_at ? ` <span class="pill cancelled">${esc(s.apply.rep.badge)}</span>` : ''}`,
     channelFlag(p.id),
     pctRate(Number(p.rate)),
     p.is_rep ? '✓' : '',
@@ -1200,7 +1209,7 @@ function adminPartnersScreen() {
   </div>
   <label class="pp-check"><input type="checkbox" name="is_rep"${edit.is_rep ? ' checked' : ''}> ${esc(A.isRep)}</label>
   <label class="pp-check"><input type="checkbox" name="trial"${edit.trial ? ' checked' : ''}> ${esc(A.trial)}</label>
-  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button></div><div class="msg" id="pmsg"></div>
+  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" id="pmsg"></div>
   <h4 class="pp-sub">${esc(A.channelHistory)}</h4>${
     (admin.checks ?? []).filter((c) => c.partner_id === edit.id).length
       ? `<ul class="pp-list small">${admin.checks
@@ -1297,6 +1306,7 @@ const ROUTES = {
   ulke: { title: s.apply.wizard.countryTitle, render: countryScreen, public: true },
   yukleniyor: { title: s.live.loading, render: loadingScreen, public: true },
   kapali: { title: s.live.closedTitle, render: closedScreen, public: true },
+  acil: { title: s.apply.rep.lockTitle, render: lockScreen, public: true },
   inceleniyor: { title: s.live.reviewTitle, render: reviewScreen, public: true },
   temsilcilik: { title: s.apply.rep.formTitle, render: repApplyScreen, get public() { return !isPartner(); } },
   'yonetici/temsilci-basvurulari': { title: s.apply.rep.adminTitle, render: () => adminRepAppsScreen() },
@@ -1395,6 +1405,7 @@ const STAGE_ROUTE = { loading: 'yukleniyor', login: 'giris', mfa: 'iki-adim', cl
 
 function currentRoute() {
   const key = location.hash.replace(/^#\/?/, '').split('?')[0] || homeKey();
+  if (key === 'acil') return 'acil';
   if (!SAMPLE && stage === 'login') return key === 'giris' || key === 'ulke' ? key : 'tanitim';
   if (!SAMPLE && stage !== 'panel') return key === 'tanitim' || (key === 'ulke' && stage === 'apply') || (key === 'temsilcilik' && stage === 'review') ? key : STAGE_ROUTE[stage];
   if (SAMPLE && ROUTES[key]?.public) return key;
@@ -2018,15 +2029,9 @@ function bind(key) {
       return null;
     };
     showStep(applyStep);
-    $('#rep-info-btn')?.addEventListener('click', (e) => {
-      $('#rep-info').hidden = false;
-      const m = $('#rep-info-msg');
-      if (SAMPLE) return;
-      act(e.currentTarget, m, async () => {
-        const r = await live.repInfo();
-        m.textContent = r === 'already' ? a.rep.already : a.rep.sent;
-      });
-    });
+    const paintRep = () => ($('#rep-info').hidden = !f.rep_info.checked);
+    paintRep();
+    f.rep_info.addEventListener('change', paintRep);
     const toCountry = () => {
       lastCountry = country;
       store('wwp-ulke', null);
@@ -2059,7 +2064,7 @@ function bind(key) {
       if (isCompany()) Object.assign(fields, { company_name: f.company_name.value, tax_office: f.tax_office?.value ?? '', tax_no: f.tax_no.value, company_reg_no: f.company_reg_no.value, company_address: f.company_address.value });
       Object.assign(fields, { country, birth_date: birthValue(), phone: phoneValue(), iban: compact(f.account.value) });
       if (!tr) Object.assign(fields, { bank_name: f.bank_name.value, bank_country: bankCountry, swift_bic: compact(f.swift_bic.value), bank_code: compact(f.bank_code.value) });
-      for (const k of ['accept_age', 'accept_contract', 'accept_privacy', 'accept_marketing']) fields[k] = f[k].checked;
+      for (const k of ['accept_age', 'accept_contract', 'accept_privacy', 'accept_marketing', 'rep_info']) fields[k] = f[k].checked;
       const msg = $('#apply-msg');
       act(e.target.querySelector('fieldset[data-step="4"] button[type=submit]'), msg, async () => {
         try {
@@ -2263,6 +2268,26 @@ function bind(key) {
       me = await live.me();
       rerender();
       window.scrollTo(0, 0);
+    });
+  });
+  $('#lock-btn')?.addEventListener('click', (e) => {
+    const t = new URLSearchParams(location.hash.split('?')[1] || '').get('t') || '';
+    const msg = $('#lock-msg');
+    if (SAMPLE) return;
+    act(e.currentTarget, msg, async () => {
+      const ok = await live.emergencyLock(t);
+      if (!ok) throw new Error('kilit_yok');
+      lockDoneFlag = true;
+      history.replaceState(null, '', '#/acil');
+      await live.signOut().catch(() => {});
+      render();
+    });
+  });
+  $('#punlock')?.addEventListener('click', (e) => {
+    if (!confirm(s.apply.rep.unlockConfirm)) return;
+    act(e.currentTarget, $('#pmsg'), async () => {
+      await live.emergencyUnlock($('#pedit').dataset.id);
+      await reload();
     });
   });
   $$('[data-edit]').forEach((b) =>
