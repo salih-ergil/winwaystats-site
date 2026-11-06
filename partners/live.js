@@ -61,15 +61,21 @@ export function createLive(W) {
     },
 
     // ---- Başvuru ----
-    apply: (fields) => rpc('partner_apply', { p: fields }),
+    async apply(fields) {
+      await sb.auth.updateUser({ data: { lang: W.lang || 'tr' } }); // e-postalar kişinin seçtiği dilde
+      return rpc('partner_apply', { p: fields });
+    },
 
     // ---- Partner işlemleri ----
     createCampaign: (name) => rpc('partner_campaign_create', { p_name: name }),
-    async repApply(fields, file) {
-      const session = await live.session();
-      const path = `${session.user.id}/cv-${Date.now()}.pdf`;
-      ok(await sb.storage.from('partner-belgeler').upload(path, file, { contentType: 'application/pdf', upsert: false }));
-      return rpc('partner_rep_apply', { p: { ...fields, cv_path: path } });
+    // Temsilcilik e-postaları kişinin panelde kullandığı dilde gitsin (yurt dışı başvuranlar)
+    async repInfo() {
+      await sb.auth.updateUser({ data: { lang: W.lang || 'tr' } });
+      return rpc('partner_rep_info_request');
+    },
+    async repApply(fields) {
+      await sb.auth.updateUser({ data: { lang: W.lang || 'tr' } });
+      return rpc('partner_rep_apply', { p: fields });
     },
     repDetail: (id) => rpc('admin_rep_application_detail', { p_id: id }),
     repDecide: (id, approve, code, detail) => rpc('admin_rep_decide', { p_id: id, p_approve: approve, p_code: code, p_detail: detail }),

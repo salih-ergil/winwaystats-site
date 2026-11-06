@@ -372,3 +372,5 @@ details.pp-appcard .pill { margin-left: auto; }
 .pp-repbox p { margin: 0 0 6px; }
 .pp-form [data-step-msg] { white-space: pre-line; }
 .pp-check-missing { padding: 8px 10px; border: 1px solid #e05a4e; border-radius: 10px; background: color-mix(in srgb, #e05a4e 10%, transparent); }
+.pp-countrylang { display: block; margin-top: 14px; }
+.pp-countrylang select { width: 100%; margin-top: 6px; }

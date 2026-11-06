@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=7e4a2e7b8c';
+import { createLive } from './live.js?v=aa238e159a';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
 
 const W = window.WWP;
@@ -691,8 +691,8 @@ function repScreen() {
 </div>
 <h2>${esc(r.listTitle)}</h2>
 <p class="muted small">${esc(r.privacy)}</p>
-<div class="notice"><b>${esc(r.channelTitle)}:</b> ${esc(r.channelText)}</div>
-${table(r.cols, rows)}`;
+${CHANNEL_CHECK_OPEN ? `<div class="notice"><b>${esc(r.channelTitle)}:</b> ${esc(r.channelText)}</div>` : ''}
+${CHANNEL_CHECK_OPEN ? table(r.cols, rows) : table(r.cols.slice(0, -1), rows.map((x) => x.slice(0, -1)))}`;
 }
 
 function adminRepsScreen() {
@@ -933,6 +933,7 @@ const channelLinks = (v) => {
 const compact = (v) => v.replace(/[\s-]/g, '').toUpperCase();
 // GDPR bilgilendirmesi gösterilen ülkeler: Avrupa Ekonomik Alanı, Birleşik Krallık, İsviçre
 const GDPR_COUNTRIES = ['AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE', 'IS', 'LI', 'NO', 'GB', 'CH'];
+const CHANNEL_CHECK_OPEN = false; // Temsilcinin aylık kanal bildirimi şimdilik kapalı (Salih, 2026-11-06); açılınca Ek-1'e madde döner
 const STEP_COUNT = 6;
 let applyStep = 1; // 1 kişisel, 2 kanal, 3 ödeme, 4 onay (genel sayaçta +2)
 let applyDraft = {}; // sadece bellekte; tarayıcıya yazılmaz
@@ -956,6 +957,7 @@ function countryScreen() {
   const w = s.apply.wizard;
   return `<section class="pp-card pp-narrow">${legalBack('#/tanitim')}${stepper(1)}<h1>${esc(w.countryTitle)}</h1><p class="muted">${esc(w.countryIntro)}</p>
 <div id="pk-start-country"></div>
+<label class="pp-countrylang">${esc(w.langChoice)}<select id="country-lang">${Object.entries(W.langs ?? { tr: 'Türkçe' }).map(([k, v]) => `<option value="${k}"${k === LANG ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
 <div class="msg" id="country-msg"></div>
 <div class="pp-actions left"><button type="button" id="country-next">${esc(w.next)}</button></div></section>`;
 }
@@ -1034,7 +1036,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
 const stateScreen = (title, text) => `<section class="pp-card pp-narrow"><h1>${esc(title)}</h1>${text ? `<p class="muted">${esc(text)}</p>` : ''}</section>`;
 const loadingScreen = () => stateScreen(s.live.loading, '');
 const closedScreen = () => stateScreen(s.live.closedTitle, s.live.closedText);
-const reviewScreen = () => `<section class="pp-card pp-narrow"><h1>${esc(s.live.reviewTitle)}</h1><p class="muted">${esc(fmt(s.live.reviewText, { no: me?.partner?.partner_no ?? '' }))}</p>${me?.partner?.rep_application?.status ? '' : `<div class="pp-actions left"><a class="btn secondary" href="#/temsilcilik">${esc(s.apply.rep.cta)}</a></div>`}${me?.partner?.rep_application?.status ? `<p class="small"><a href="#/temsilcilik">${esc(s.apply.rep.menu)}</a></p>` : ''}</section>`;
+const reviewScreen = () => `<section class="pp-card pp-narrow"><h1>${esc(s.live.reviewTitle)}</h1><p class="muted">${esc(fmt(s.live.reviewText, { no: me?.partner?.partner_no ?? '' }))}</p></section>`;
 // Acil kilit: değişiklik e-postasındaki bağlantı; giriş gerektirmez. Bağlantı adres satırında sunucuya gitmeyen # bölümünde
 function lockScreen() {
   const r = s.apply.rep;
@@ -1053,14 +1055,18 @@ function repApplyScreen() {
   if (status === 'pending') return `<section class="pp-card pp-narrow">${back}<h1>${esc(r.pendingTitle)}</h1><p class="muted">${esc(r.pendingText)}</p></section>`;
   if (status === 'auto_rejected') return `<section class="pp-card pp-narrow"><h1>${esc(r.rejectedTitle)}</h1><p class="muted">${esc(r.autoText)}</p></section>`;
   const prior = status === 'rejected' ? `<div class="notice"><b>${esc(r.rejectedTitle)}</b>${a.reject_code && a.reject_code !== 'diger' ? `<br>${esc(s.live.rejectReasonLabel)}: ${esc(r.reasons[a.reject_code] ?? '')}` : ''}${a.reject_detail ? `<br>${esc(a.reject_code === 'diger' ? s.live.rejectReasonLabel : s.live.rejectNoteLabel)}: ${esc(a.reject_detail)}` : ''}</div>` : '';
-  return `<section class="pp-card pp-form">${back}<h1>${esc(r.formTitle)}</h1><p class="muted">${esc(r.formIntro)}</p>${prior}
-<div class="notice small">${esc(r.info)}</div>
+  // Form, ayrıntılı bilgi e-postası gittikten sonra açılır (e-postadaki düğme buraya gelir)
+  if (!me?.partner?.rep_info_sent) {
+    return `<section class="pp-card pp-narrow"><h1>${esc(r.requestTitle)}</h1>${prior}<p class="muted">${esc(r.info)}</p><p class="muted">${esc(r.requestText)}</p><div class="pp-actions left"><button type="button" class="secondary" id="rep-request">${esc(r.requestBtn)}</button></div><div class="msg" id="rep-request-msg"></div></section>`;
+  }
+  return `<section class="pp-card pp-form"><h1>${esc(r.formTitle)}</h1><p>${esc(r.formIntro)}</p>${prior}
 <form id="rep-form" novalidate>
+  <label>${esc(r.about)}<textarea name="about" rows="3" maxlength="1500" placeholder="${esc(r.aboutHint)}"></textarea></label>
   <label>${esc(r.experience)}<textarea name="experience" rows="3" maxlength="1500" placeholder="${esc(r.experienceHint)}"></textarea></label>
   <label>${esc(r.plan)}<textarea name="plan" rows="3" maxlength="1500" placeholder="${esc(r.planHint)}"></textarea></label>
-  <label>${esc(r.hours)}<input name="hours" inputmode="numeric" maxlength="2"></label>
-  <label>${esc(r.cv)}<input name="cv" type="file" accept="application/pdf"></label>
+  <label>${esc(r.hours)}<select name="hours"><option value="">${esc(r.hoursPick)}</option><option value="5">${esc(r.h5)}</option><option value="10">${esc(r.h10)}</option><option value="20">${esc(r.h20)}</option><option value="40">${esc(r.h40)}</option></select></label>
   <label class="pp-check"><input type="checkbox" name="accept"> <span><a href="#" data-legal="temsilci">${esc(r.acceptLink)}</a>${esc(r.acceptRest)}</span></label>
+  <p class="muted small">${esc(r.calm)}</p>
   <div class="msg" id="rep-msg"></div>
   <button type="submit">${esc(r.submit)}</button>
 </form></section>`;
@@ -1150,8 +1156,8 @@ function adminRepAppsScreen() {
       const ok = p?.status === 'approved';
       return `<details class="pp-card pp-appcard" data-repapp="${x.id}" data-open-key="${key}"${openCards.has(key) ? ' open' : ''}>
   <summary><span><b>${esc(p?.priv?.company_name || p?.priv?.full_name || p?.partner_no || '–')}</b><br><span class="muted small">${esc(p?.partner_no ?? '')} · ${date(Date.parse(x.created_at))} · ${esc(A.statuses[p?.status] ?? p?.status ?? '')}</span></span></summary>
-  ${row(r.partnerStatus, esc(A.statuses[p?.status] ?? p?.status ?? '–'))}${row(r.hours, esc(x.hours_per_week ?? '–'))}
-  ${d ? `<h4 class="pp-sub">${esc(r.experience)}</h4><p class="small pp-pre">${esc(d.experience)}</p><h4 class="pp-sub">${esc(r.plan)}</h4><p class="small pp-pre">${esc(d.plan)}</p>` : `<p class="muted small">${esc(A.revealNote)}</p>`}
+  ${row(r.partnerStatus, esc(A.statuses[p?.status] ?? p?.status ?? '–'))}${row(s.apply.country, esc(p?.priv?.country ? countryName(p.priv.country) : '–'))}${row(r.hours, esc(r[`h${x.hours_per_week}`] ?? x.hours_per_week ?? '–'))}
+  ${d ? `<h4 class="pp-sub">${esc(r.about)}</h4><p class="small pp-pre">${esc(d.about ?? '–')}</p><h4 class="pp-sub">${esc(r.experience)}</h4><p class="small pp-pre">${esc(d.experience ?? '–')}</p><h4 class="pp-sub">${esc(r.plan)}</h4><p class="small pp-pre">${esc(d.plan)}</p>` : `<p class="muted small">${esc(A.revealNote)}</p>`}
   <div class="pp-actions left">${x.cv_path ? `<button type="button" class="secondary small" data-doc="${esc(x.cv_path)}">${esc(r.cvOpen)}</button>` : ''}</div>
   ${ok ? '' : `<div class="notice">${esc(r.needPartner)}</div>`}
   <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(r.reasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
@@ -1228,7 +1234,8 @@ function adminPartnersScreen() {
   }
   <h4 class="pp-sub">${esc(A.log)}</h4>${logList(edit.id)}</section>`
     : '';
-  return `${form}${table(A.partnerCols, rows)}`;
+  const dropCheck = (x) => (CHANNEL_CHECK_OPEN ? x : x.filter((_, i) => i !== 3));
+  return `${form}${table(dropCheck(A.partnerCols), rows.map(dropCheck))}`;
 }
 
 function adminPayoutsScreen() {
@@ -1414,7 +1421,8 @@ const STAGE_ROUTE = { loading: 'yukleniyor', login: 'giris', mfa: 'iki-adim', cl
 function currentRoute() {
   const key = location.hash.replace(/^#\/?/, '').split('?')[0] || homeKey();
   if (key === 'acil') return 'acil';
-  if (!SAMPLE && stage === 'login') return key === 'giris' || key === 'ulke' ? key : 'tanitim';
+  // E-postadaki temsilcilik düğmesi: giriş yapılmadıysa önce giriş, adres korunur
+  if (!SAMPLE && stage === 'login') return key === 'giris' || key === 'ulke' ? key : key === 'temsilcilik' ? 'giris' : 'tanitim';
   if (!SAMPLE && stage !== 'panel') return key === 'tanitim' || (key === 'ulke' && stage === 'apply') || (key === 'temsilcilik' && stage === 'review') ? key : STAGE_ROUTE[stage];
   if (SAMPLE && ROUTES[key]?.public) return key;
   if (!SAMPLE && ['tanitim', 'basvuru', 'inceleniyor'].includes(key) && (key === 'tanitim' || allowedKeys().includes(key))) return key;
@@ -1857,8 +1865,10 @@ function bind(key) {
     loadCountries().then((list) => {
       const box = $('#pk-start-country');
       if (!box) return;
-      picker(box, { name: 'start_country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: myCountry() || lastCountry, placeholder: s.apply.wizard.countryPh, search: s.apply.countrySearch, empty: s.apply.notFound });
+      picker(box, { name: 'start_country', items: list.map((c) => ({ v: c.c, l: `${c.f} ${LANG === 'tr' ? c.n : countryName(c.c) || c.n}` })), value: myCountry() || lastCountry, placeholder: s.apply.wizard.countryPh, onChange: (c) => { const sel = $('#country-lang'); if (sel && !sel.dataset.touched && W.langs?.[COUNTRY_LANG[c] ?? 'en']) sel.value = COUNTRY_LANG[c] ?? 'en'; }, search: s.apply.countrySearch, empty: s.apply.notFound });
     });
+    // Ülke formun alanlarını belirler; dil kişinin seçimidir (Salih, 2026-11-06). Ülke seçilince dil önerilir, kişi değiştirirse o kalır.
+    $('#country-lang').addEventListener('change', (e) => (e.target.dataset.touched = '1'));
     $('#country-next').addEventListener('click', () => {
       const c = app.querySelector('input[name="start_country"]')?.value;
       if (!c) {
@@ -1874,7 +1884,7 @@ function bind(key) {
         for (const k of ['id_no', 'phone', 'account', 'bank_country', 'bank_name', 'swift_bic', 'bank_code', 'tax_office', 'tax_no', 'company_reg_no']) delete applyDraft[k];
       }
       const target = !SAMPLE && stage === 'login' ? '#/giris' : '#/basvuru';
-      const lang = COUNTRY_LANG[c] ?? 'en';
+      const lang = $('#country-lang').value;
       if (lang !== LANG && W.langs?.[lang]) {
         store('wwp-dil', lang);
         location.href = langPath(lang) + target;
@@ -2183,6 +2193,12 @@ function bind(key) {
   );
   $('#pp-lang')?.addEventListener('change', (e) => {
     const l = e.target.value;
+    // Dil başka bir sayfadır; yazılanlar güvenlik gereği tarayıcıya kaydedilmediği için silinir, önce sorulur
+    const typed = [...app.querySelectorAll('#apply-form input:not([type=hidden]):not([type=checkbox]), #apply-form textarea, #rep-form textarea')].some((x) => x.value.trim());
+    if (typed && !window.confirm(s.apply.wizard.langChangeWarn)) {
+      e.target.value = LANG;
+      return;
+    }
     store('wwp-dil', l);
     location.href = langPath(l) + location.hash;
   });
@@ -2274,14 +2290,19 @@ function bind(key) {
       });
     }),
   );
+  $('#rep-request')?.addEventListener('click', (e) => {
+    const m = $('#rep-request-msg');
+    act(e.currentTarget, m, async () => {
+      await live.repInfo();
+      m.textContent = s.apply.rep.requestSent;
+    });
+  });
   $('#rep-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const f = e.currentTarget.elements;
     const msg = $('#rep-msg');
     const E = s.live.errors;
-    const hours = Number(f.hours.value);
-    const file = f.cv.files[0];
-    const problem = f.experience.value.trim().length < 20 ? E.temsilci_deneyim : f.plan.value.trim().length < 20 ? E.temsilci_plan : !(hours >= 1 && hours <= 80) ? E.temsilci_sure : !file || file.type !== 'application/pdf' || file.size > 5 * 1024 * 1024 ? E.temsilci_cv : !f.accept.checked ? E.temsilci_onay : '';
+    const problem = f.about.value.trim().length < 10 ? E.temsilci_hakkinda : f.plan.value.trim().length < 10 ? E.temsilci_plan : !f.hours.value ? E.temsilci_sure : !f.accept.checked ? E.temsilci_onay : '';
     if (problem) {
       msg.textContent = problem;
       msg.className = 'msg error';
@@ -2289,7 +2310,7 @@ function bind(key) {
     }
     if (SAMPLE) return;
     act(e.currentTarget.querySelector('button[type=submit]'), msg, async () => {
-      await live.repApply({ experience: f.experience.value, plan: f.plan.value, hours: String(hours), accept: true }, file);
+      await live.repApply({ about: f.about.value, experience: f.experience.value, plan: f.plan.value, hours: f.hours.value, accept: true });
       me = await live.me();
       rerender();
       window.scrollTo(0, 0);
