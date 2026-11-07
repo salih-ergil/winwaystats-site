@@ -91,6 +91,14 @@ const code = (params.get('kod') || load('ww_partner_code') || '').toUpperCase().
 if (params.get('kod')) store('ww_partner_code', code);
 if (fromLink) store('ww_partner_source', 'link');
 
+// Uygulamadan üye olan da partnere bağlansın: kod Google Play kurulum bilgisine yazılır, uygulama ilk girişte okur
+if (code) {
+  document.querySelectorAll('a[href*="play.google.com/store/apps/details"]').forEach((a) => {
+    a.href += `&referrer=${encodeURIComponent(`partner_code=${code}`)}`;
+  });
+  if (/Android/i.test(navigator.userAgent)) $('k-app').hidden = false;
+}
+
 async function checkCode(v) {
   const msg = $('code-msg');
   if (!v) return (msg.textContent = '');
