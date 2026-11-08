@@ -21,19 +21,23 @@ const SEPARATORS = {
  */
 export function formatNumber(value, decimals = 2, language = numberLanguage) {
     const { group, decimal } = SEPARATORS[language];
-    const negative = value < 0;
-    const [whole, fraction] = Math.abs(value).toFixed(decimals).split('.');
+    const fixed = Math.abs(value).toFixed(decimals);
+    // İşaret yuvarlamadan sonra belirlenir: -0,001 → "0,00" ("-0,00" değil)
+    const negative = value < 0 && Number(fixed) !== 0;
+    const [whole, fraction] = fixed.split('.');
     const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, group);
     return `${negative ? '-' : ''}${grouped}${fraction ? `${decimal}${fraction}` : ''}`;
 }
 /**
- * Yüzde, dile göre: Türkçe %26,2 · İngilizce 26.2% · Almanca / İspanyolca 26,2 % · Rusça 26,2%.
+ * Yüzde, dilin standardına göre (Intl ile aynı; ülke değil dil belirler): Türkçe %26,2 · İngilizce 26.2% ·
+ * Almanca, Rusça, İspanyolca, Fransızca 26,2 % · Portekizce, İtalyanca, Lehçe 26,2%.
  * sign: 'auto' eksi işareti (−), 'always' artı ya da eksi, 'none' işaretsiz (mutlak değer).
  */
 export function formatPercent(value, decimals = 0, sign = 'auto') {
     const n = formatNumber(Math.abs(value), decimals);
-    const body = numberLanguage === 'tr' ? `%${n}` : numberLanguage === 'de' || numberLanguage === 'es' || numberLanguage === 'fr' || numberLanguage === 'it' || numberLanguage === 'pl' ? `${n}\u00a0%` : `${n}%`;
-    const prefix = sign === 'none' || value === 0 ? '' : value < 0 ? '−' : sign === 'always' ? '+' : '';
+    const body = numberLanguage === 'tr' ? `%${n}` : numberLanguage === 'de' || numberLanguage === 'ru' || numberLanguage === 'es' || numberLanguage === 'fr' ? `${n}\u00a0%` : `${n}%`;
+    // Yuvarlanınca sıfır olan değerde işaret yok (−0 %, +0 % görünmez)
+    const prefix = sign === 'none' || Number(Math.abs(value).toFixed(decimals)) === 0 ? '' : value < 0 ? '−' : sign === 'always' ? '+' : '';
     return `${prefix}${body}`;
 }
 /** Sanal coin: ₵50.000,00 */

@@ -260,6 +260,52 @@ export function buildSample(now = Date.now()) {
       { partner_id: 'p1', month: '2026-10-01', betting_ads: false, note: null, checked_at: new Date(now - 4 * DAY).toISOString() },
     ],
   };
+  // Yönetici onayı bekleyen üyelik ödemeleri ve hile işaretleri (admin_member_bonus_list / admin_flag_list biçimi)
+  const iso = (t) => new Date(t).toISOString();
+  const bonusRow = (p, i, extra = {}) => ({
+    id: 9000 + i,
+    partner_id: p.id,
+    partner_no: p.partner_no,
+    partner_name: p.priv.full_name,
+    partner_status: p.status,
+    partner_locked: false,
+    referral_id: 7000 + i,
+    account_no: `WW${String(482113 + i * 977).padStart(7, '0')}`,
+    country: 'TR',
+    source: 'link',
+    registered_at: iso(now - (95 + i) * DAY),
+    checked_at: iso(now - (i % 3) * DAY),
+    amount: BONUS,
+    currency: 'TRY',
+    status: 'pending',
+    available_at: null,
+    note: 'üyelik ödemesi (yönetici onayı bekliyor)',
+    created_at: iso(now - (i % 3) * DAY - i * 3600000),
+    period: new Date(now).toISOString().slice(0, 7),
+    same_device: 0,
+    flags: [],
+    decided_at: null,
+    decision: null,
+    ...extra,
+  });
+  const ap = adminPartners;
+  adminSample.bonuses = [
+    bonusRow(ap[1], 1),
+    bonusRow(ap[1], 2),
+    bonusRow(ap[2], 3),
+    bonusRow(ap[3], 4, { same_device: 2, flags: [{ id: 41, kind: 'device', rep_decision: 'suspicious', admin_decision: null, created_at: iso(now - 6 * DAY) }] }),
+    bonusRow(ap[4], 5),
+    bonusRow(ap[8], 6, { partner_status: 'suspended' }),
+  ];
+  adminSample.bonusDone = [
+    bonusRow(ap[2], 7, { status: 'available', available_at: iso(now - 2 * DAY), decided_at: iso(now - 2 * DAY), decision: true, note: 'üyelik ödemesi (yönetici onayladı)' }),
+    bonusRow(ap[5], 8, { status: 'cancelled', decided_at: iso(now - 3 * DAY), decision: false, note: 'Aynı hanede ikinci hesap' }),
+  ];
+  adminSample.flags = [
+    { id: 41, partner_id: ap[3].id, partner_no: ap[3].partner_no, partner_name: ap[3].priv.full_name, partner_status: 'approved', kind: 'device', details: { members: 12, same_device: 7 }, created_at: iso(now - 6 * DAY), rep_decision: 'suspicious', rep_note: 'Aynı cihazdan art arda açılmış hesaplar var.', rep_decided_at: iso(now - 4 * DAY), held_members: 9 },
+    { id: 42, partner_id: ap[6].id, partner_no: ap[6].partner_no, partner_name: ap[6].priv.full_name, partner_status: 'approved', kind: 'noSubs', details: { members: 64, sub_rate: 0.0 }, created_at: iso(now - 3 * DAY), rep_decision: null, rep_note: null, rep_decided_at: null, held_members: 31 },
+    { id: 43, partner_id: ap[7].id, partner_no: ap[7].partner_no, partner_name: ap[7].priv.full_name, partner_status: 'approved', kind: 'pattern', details: { members: 38, burst_10min: 14 }, created_at: iso(now - 1 * DAY), rep_decision: 'genuine', rep_note: null, rep_decided_at: iso(now - 12 * 3600000), held_members: 0 },
+  ];
 
   const nextPay = new Date(now);
   if (nextPay.getDate() >= 18) nextPay.setMonth(nextPay.getMonth() + 1);

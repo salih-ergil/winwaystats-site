@@ -2,7 +2,7 @@
 // (src/features/auth/validation.ts); hesap açılınca kullanıcı uygulamaya bu hesapla girer. Partner kodu (bağlantıdan ya da
 // elle) kayıttaki ek bilgiye yazılır; sunucu hesabı açarken kullanıcıyı partnere bağlar (partner_on_profile_created).
 // Ayrıca /p/<kod> yönlendirmesi 404.html'den buraya ?kod=...&k=1 ile gelir (tıklama orada sayılır).
-import { loadCities, loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
+import { loadCities, loadCountries, picker, PICKER_CSS } from '/secim.js?v=29fc971418';
 
 const W = window.WWK;
 const s = W.s;

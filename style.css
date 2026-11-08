@@ -1,3 +1,10 @@
+/* Yazı tipleri sitemizden (build: scripts/web-sitesi.mjs → /fonts) */
+@font-face { font-family: 'Red Hat Display'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/RedHatDisplay_400Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Red Hat Display'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/RedHatDisplay_600SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Red Hat Display'; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/RedHatDisplay_700Bold.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/Manrope_400Regular.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/Manrope_600SemiBold.ttf') format('truetype'); }
+@font-face { font-family: 'Manrope'; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/Manrope_700Bold.ttf') format('truetype'); }
 :root {
   --bg: #1d211d;
   --surface: #232c23;

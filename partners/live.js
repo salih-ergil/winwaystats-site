@@ -49,6 +49,14 @@ export function createLive(W) {
       const factors = ok(await sb.auth.mfa.listFactors());
       return { current: level.currentLevel, verified: factors.totp?.find((f) => f.status === 'verified') ?? null, all: factors.all ?? [] };
     },
+    // Kurulumdan önce e-posta kutusunun kişiye ait olduğu doğrulanır (parolası ele geçirilmiş biri kendi doğrulayıcısını bağlayamasın).
+    // auth.reauthenticate() nonce'u yalnızca parola değişikliğinde kullanılır, mfa.enroll nonce almaz; bu yüzden e-posta kodu (OTP) kullanılır.
+    async sendEnrollCode(email, captchaToken) {
+      ok(await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, captchaToken: captchaToken ?? undefined } }));
+    },
+    async confirmEnrollCode(email, token) {
+      ok(await sb.auth.verifyOtp({ email, token, type: 'email' }));
+    },
     async enroll() {
       // Yarım kalmış (doğrulanmamış) kurulumlar silinir; aynı adla yeniden kurulabilsin
       const factors = ok(await sb.auth.mfa.listFactors());
@@ -237,6 +245,13 @@ export function createLive(W) {
 
     // ---- Yönetici (RLS: partner_admins + aal2) ----
     async loadAdmin() {
+      // Üyelik ödemeleri ve hile işaretleri (2026-11-07): fonksiyonlar henüz kurulmamışsa diğer ekranlar yine açılır
+      const soft = (p) => p.then((rows) => ({ rows, error: null }), (error) => ({ rows: [], error }));
+      const extras = Promise.all([
+        soft(rpc('admin_member_bonus_list', { p_status: 'pending', p_limit: 500 })),
+        soft(rpc('admin_member_bonus_list', { p_status: 'decided', p_limit: 30 })),
+        soft(rpc('admin_flag_list', { p_limit: 200 })),
+      ]);
       const [partners, notes, priv, accts, payouts, settings, repApps, feedback, ledger, log, errs, checks, reviews] = await Promise.all([
         sb.from('partners').select(PARTNER_COLS).order('created_at', { ascending: false }).then(ok),
         rpc('admin_partner_notes'),
@@ -252,6 +267,7 @@ export function createLive(W) {
         sb.from('partner_channel_checks').select('*').order('month', { ascending: false }).limit(5000).then(ok),
         rpc('admin_partner_reviews'),
       ]);
+      const [bonuses, bonusDone, adminFlags] = await extras;
       const byId = Object.fromEntries(priv.map((x) => [x.partner_id, x]));
       const acct = Object.fromEntries(accts.map((x) => [x.partner_id, x]));
       const bal = {};
@@ -273,6 +289,11 @@ export function createLive(W) {
         log,
         errors: errs.count ?? 0,
         checks,
+        bonuses: bonuses.rows ?? [],
+        bonusDone: bonusDone.rows ?? [],
+        bonusError: bonuses.error,
+        flags: adminFlags.rows ?? [],
+        flagsError: adminFlags.error,
       };
     },
     async emergencyLock(token) {
@@ -299,6 +320,8 @@ export function createLive(W) {
     updatePartner: (id, patch) => rpc('admin_partner_update', { p_partner: id, p: patch }),
     setPayout: (id, status) => rpc('admin_payout_set', { p_id: id, p_status: status }),
     setSetting: (key, value) => rpc('admin_setting_set', { p_key: key, p_value: value }),
+    decideMemberBonus: (id, approve, note) => rpc('admin_member_bonus_decide', { p_id: id, p_approve: approve, p_note: note || null }),
+    decideAdminFlag: (id, decision, note) => rpc('admin_flag_decide', { p_id: id, p_decision: decision, p_note: note || null }),
     acceptContract: (version) => rpc('partner_accept_contract', { p_version: version }),
   };
   return live;

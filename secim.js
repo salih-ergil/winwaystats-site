@@ -3,7 +3,7 @@
 //   v: kaydedilen değer · l: listede görünen · s: seçilince kutuda görünen (yoksa l). Değer gizli bir alana yazılır (form ile gider).
 // Arama Türkçe harf ve büyük-küçük harf farkı gözetmez ("istanbul" = "İstanbul"). Listeler: /geo/ (scripts/geo-veri.mjs).
 const norm = (t) => String(t).toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[̀-ͯ]/g, '');
-const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const MAX = 200;
 
 export function picker(root, opt) {

@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Cyg1qhKVyS1XvSyd+hQMhN5/E6YljDWuiMbT4Kj6vO4=' 'sha256-13IJ+WKzIKPS9CZZ//oRQDTfwntVZCluX8z70pfKeeo=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://gvpyzzcbcvlwrqhcnrqf.supabase.co; connect-src 'self' https://gvpyzzcbcvlwrqhcnrqf.supabase.co wss://gvpyzzcbcvlwrqhcnrqf.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Cyg1qhKVyS1XvSyd+hQMhN5/E6YljDWuiMbT4Kj6vO4=' 'sha256-13IJ+WKzIKPS9CZZ//oRQDTfwntVZCluX8z70pfKeeo=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://gvpyzzcbcvlwrqhcnrqf.supabase.co; connect-src 'self' https://gvpyzzcbcvlwrqhcnrqf.supabase.co wss://gvpyzzcbcvlwrqhcnrqf.supabase.co https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <script>if(top!==self){document.documentElement.style.display='none';top.location=self.location.href;}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -21,9 +21,15 @@
 <link rel="alternate" hreflang="pt" href="https://winwaystats.com/pt/kayit">
 <link rel="alternate" hreflang="it" href="https://winwaystats.com/it/kayit">
 <link rel="alternate" hreflang="pl" href="https://winwaystats.com/pl/kayit">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="alternate" hreflang="x-default" href="https://winwaystats.com/kayit">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="WinwayStats">
+<meta property="og:title" content="Crear una cuenta de WinwayStats · WinwayStats">
+<meta property="og:description" content="WinwayStats: pronósticos de fútbol sin dinero real y conciencia del comportamiento.">
+<meta property="og:url" content="https://winwaystats.com/es/kayit">
+<meta property="og:image" content="https://winwaystats.com/icon.png">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -39,20 +45,20 @@
 <p class="muted">Crea tu cuenta aquí, luego descarga la app WinwayStats e inicia sesión con el mismo correo y contraseña. Sin dinero real; las monedas no se pueden comprar.</p>
 <p class="notice" id="k-app" hidden>También puedes registrarte en la app; tu enlace se conserva. <a class="k-store" href="https://play.google.com/store/apps/details?id=com.winwaystats.app" rel="noopener">Descargar en Google Play</a></p>
 <form id="signup-form" novalidate>
-  <label>Nombre de usuario<input name="username" autocomplete="username" maxlength="20" required><span class="msg error" data-err="username"></span></label>
-  <label>Correo<input name="email" type="email" autocomplete="email" required><span class="msg error" data-err="email"></span></label>
-  <label>Contraseña<span class="k-pass"><input name="password" type="password" autocomplete="new-password" required><button type="button" class="secondary small" id="pass-toggle">Mostrar</button></span><span class="msg error" data-err="password"></span></label>
-  <label>Nombre y apellidos<input name="full_name" autocomplete="name" required><span class="msg error" data-err="full_name"></span></label>
-  <label>Teléfono<span class="k-phone"><span id="pk-dial" class="k-dial"></span><input name="phone" type="tel" autocomplete="tel-national" required></span><span class="msg error" data-err="phone"></span></label>
+  <label>Nombre de usuario<input name="username" autocomplete="username" maxlength="20" required><span class="msg error" data-err="username" aria-live="polite"></span></label>
+  <label>Correo<input name="email" type="email" autocomplete="email" required><span class="msg error" data-err="email" aria-live="polite"></span></label>
+  <label>Contraseña<span class="k-pass"><input name="password" type="password" autocomplete="new-password" required><button type="button" class="secondary small" id="pass-toggle">Mostrar</button></span><span class="msg error" data-err="password" aria-live="polite"></span></label>
+  <label>Nombre y apellidos<input name="full_name" autocomplete="name" required><span class="msg error" data-err="full_name" aria-live="polite"></span></label>
+  <label>Teléfono<span class="k-phone"><span id="pk-dial" class="k-dial"></span><input name="phone" type="tel" autocomplete="tel-national" required></span><span class="msg error" data-err="phone" aria-live="polite"></span></label>
   <div class="k-field"><span class="k-lab">Fecha de nacimiento</span><div class="k-dob"><select name="birth_day" aria-label="Día"></select><select name="birth_month" aria-label="Mes"></select><select name="birth_year" aria-label="Año"></select></div><span class="msg error" data-err="birth_date"></span></div>
   <div class="k-field"><span class="k-lab">País de residencia (opcional)</span><div id="pk-country"></div></div>
   <div class="k-field"><span class="k-lab">Ciudad de residencia (opcional)</span><div id="pk-city"></div></div>
-  <label>Código de partner (si tienes)<input name="partner_code" autocapitalize="characters" maxlength="12"><span class="msg" id="code-msg"></span></label>
+  <label>Código de partner (si tienes)<input name="partner_code" autocapitalize="characters" maxlength="12"><span class="msg" id="code-msg" aria-live="polite"></span></label>
   <label class="k-check"><input type="checkbox" name="adult"> <span>Soy mayor de 18 años.</span></label><span class="msg error" data-err="adult"></span>
   <label class="k-check"><input type="checkbox" name="terms"> <span>Acepto el <a href="/es/kullanici-sozlesmesi" target="_blank" rel="noopener">Acuerdo de Usuario</a> y confirmo que he leído la <a href="/es/gizlilik" target="_blank" rel="noopener">Política de Privacidad</a> y el <a href="/es/kvkk" target="_blank" rel="noopener">Aviso KVKK</a>.</span></label><span class="msg error" data-err="terms"></span>
   <div id="captcha"></div>
   <button type="submit">Crear mi cuenta</button>
-  <div class="msg" id="form-msg"></div>
+  <div class="msg" id="form-msg" aria-live="polite"></div>
 </form>
 <p class="muted small">Lista de ciudades: <a href="https://www.geonames.org" target="_blank" rel="noopener">GeoNames</a> (CC BY 4.0).</p>
 </section>

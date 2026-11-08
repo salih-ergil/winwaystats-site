@@ -1,9 +1,9 @@
 // Winway Partners paneli (winwaystats.com/partners). Tek sayfa, adres içi yönlendirme (#/ana-sayfa ...).
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
-import { buildSample } from './sample.js?v=4d1886482d';
-import { createLive } from './live.js?v=862d2e6df2';
-import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=db427b3a8e';
+import { buildSample } from './sample.js?v=e1b8aa27ab';
+import { createLive } from './live.js?v=8f72958529';
+import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=29fc971418';
 
 const W = window.WWP;
 const s = W.s;
@@ -13,7 +13,9 @@ const LOCALES = { tr: 'tr-TR', en: 'en-GB', de: 'de-DE', ru: 'ru-RU', es: 'es-ES
 const LOCALE = LOCALES[LANG] ?? 'tr-TR';
 const langPath = (l) => `/partners/${l === 'tr' ? '' : `${l}/`}`;
 const DAY = 86400000;
-const SAMPLE = !W.url || new URLSearchParams(location.search).has('ornek');
+// Örnek veri (?ornek=1) yalnızca yerelde (localhost / 127.0.0.1); yayında bu adres gerçek panele düşer
+const LOCAL_HOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+const SAMPLE = !W.url || (LOCAL_HOST && new URLSearchParams(location.search).has('ornek'));
 const live = SAMPLE ? null : createLive(W);
 const EMPTY = () => ({ now: Date.now(), joined: Date.now(), prices: {}, users: [], commissions: [], clicks: [], campaigns: [], payouts: [], repTiers: [], flags: [], reps: [], profile: {} });
 let data = SAMPLE ? buildSample() : EMPTY();
@@ -21,7 +23,9 @@ let data = SAMPLE ? buildSample() : EMPTY();
 let stage = SAMPLE ? 'panel' : 'loading';
 let me = SAMPLE ? { settings: { default_rate: 0.1 } } : null;
 let admin = SAMPLE ? data.adminSample : null;
-let mfa = { factorId: null, qr: null, secret: null };
+// partner_me 'admin' der ama yönetici kapısı (aal2 + sabitlenmiş TOTP) reddederse yönetici ekranları yerine bilgi gösterilir (2026-11-07)
+let adminBlocked = false;
+let mfa = { factorId: null, qr: null, secret: null, step: null, email: '' }; // step: admin | send | code | enroll (kurulumdan önce e-posta doğrulaması; enroll: kod doğrulandı, kurulum yeniden denenir)
 document.querySelectorAll('link[media="print"]').forEach((l) => (l.media = 'all')); // yazı tipi sayfayı bekletmez
 let captchaToken = null;
 const openCards = new Set(); // açık başvuru kartları
@@ -43,6 +47,7 @@ const state = {
   filters: { campaign: '', status: '', country: '', q: '' },
   lastCreated: null,
   usersLimit: 50,
+  bonusTab: 'bonus',
 };
 
 // Önizleme kuru (gösterim için): 1 USD / 1 EUR kaç TL
@@ -50,7 +55,7 @@ const state = {
 const FX = { TRY: 1, USD: 42.1, EUR: 48.9 };
 
 // ---- Yardımcılar ----
-const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const fmt = (str, vars) => str.replace(/\{\{(\w+)\}\}/g, (_, k) => vars[k] ?? '');
 const money = (tl, currency = state.currency) =>
   new Intl.NumberFormat(LOCALE, { style: 'currency', currency, currencyDisplay: 'narrowSymbol', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(tl / FX[currency]);
@@ -329,7 +334,7 @@ function linkBox() {
     <label>${esc(s.home.campaign)}<input name="name" placeholder="${esc(s.links.placeholder)}" maxlength="30"></label>
     <button type="submit">${esc(s.home.create)}</button>
   </form>
-  <div class="msg" data-msg="link"></div>
+  <div class="msg" aria-live="polite" data-msg="link"></div>
   <label>${esc(s.home.link)}</label>${copyRow(link)}
   <label>${esc(s.home.code)}</label>${copyRow(code)}
   <p class="muted small">${esc(s.home.codeNote)}</p>
@@ -642,7 +647,7 @@ function myRepCard() {
   ${m.email ? `<div class="pp-row"><span>${esc(s.contact.email)}</span><b>${esc(m.email)}</b></div>` : ''}
   <p class="small">${esc(m.rated ? s.myRep.thanks : r.ask)}</p>
   <div class="pp-stars" id="stars">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="secondary small" data-star="${n}">${n}</button>`).join('')}</div>
-  <div class="msg small" id="star-msg"></div>
+  <div class="msg small" aria-live="polite" id="star-msg"></div>
   <button type="button" class="secondary small" id="rep-change">${esc(r.change)}</button>
 </section>`;
 }
@@ -741,7 +746,7 @@ ${data.flags
   ${stat(f.held, money(x.held))}
   ${x.decision ? `<p class="pill ${x.decision === 'genuine' ? 'active' : 'cancelled'}">${esc(s.live.decided[x.decision])}</p>${x.note ? `<p class="muted small">${esc(x.note)}</p>` : ''}` : `<label>${esc(f.note)}<textarea rows="2" data-note></textarea></label>
   <div class="pp-actions left"><button type="button" data-decide="genuine">${esc(f.genuine)}</button><button type="button" class="danger" data-decide="suspicious">${esc(f.suspicious)}</button></div>`}
-  <div class="msg" data-fmsg></div>
+  <div class="msg" aria-live="polite" data-fmsg></div>
 </section>`,
   )
   .join('')}`;
@@ -789,7 +794,7 @@ ${strip(P.productTitle, 'urun')}
 <section class="pp-card pp-verify">
   <div><h3>${esc(P.verifyTitle)}</h3><p class="muted">${esc(P.verifyText)}</p>
   <form id="verify-form" class="pp-inline"><label><input name="code" placeholder="${esc(P.verifyPlaceholder)}" maxlength="12" autocapitalize="characters"></label><button type="submit">${esc(P.verifyButton)}</button></form>
-  <div class="msg" id="verify-msg"></div></div>
+  <div class="msg" aria-live="polite" id="verify-msg"></div></div>
   <div class="pp-verify-badge" aria-hidden="true"><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
 </section>
 
@@ -829,7 +834,7 @@ function forgotScreen() {
   <label>${esc(s.login.email)}<input name="email" type="email" autocomplete="email" value="${esc(forgot.email)}" required></label>
   ${SAMPLE ? '' : '<div id="captcha"></div>'}
   <button type="submit">${esc(r.send)}</button>
-  <div class="msg" id="forgot-msg"></div>
+  <div class="msg" aria-live="polite" id="forgot-msg"></div>
 </form>${back}</section>`;
   }
   if (forgot.step === 'code') {
@@ -837,7 +842,7 @@ function forgotScreen() {
 <form id="forgot-code">
   <label>${esc(r.code)}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="pp-code" required></label>
   <button type="submit">${esc(r.verify)}</button>
-  <div class="msg" id="forgot-msg"></div>
+  <div class="msg" aria-live="polite" id="forgot-msg"></div>
 </form><p class="small"><a href="#" data-forgot="email">${esc(r.resend)}</a></p>${back}</section>`;
   }
   if (forgot.step === 'totp') {
@@ -845,7 +850,7 @@ function forgotScreen() {
 <form id="forgot-totp">
   <label>${esc(s.twoFactor.code)}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" class="pp-code" required></label>
   <button type="submit">${esc(r.verify)}</button>
-  <div class="msg" id="forgot-msg"></div>
+  <div class="msg" aria-live="polite" id="forgot-msg"></div>
 </form><p class="muted small">${esc(r.help)}</p></section>`;
   }
   return `<section class="pp-card pp-narrow"><h1>${esc(r.newTitle)}</h1><p class="muted">${esc(r.rules)}</p>
@@ -853,7 +858,7 @@ function forgotScreen() {
   <label>${esc(r.password)}<input name="password" type="password" autocomplete="new-password" required></label>
   <label>${esc(r.password2)}<input name="password2" type="password" autocomplete="new-password" required></label>
   <button type="submit">${esc(r.save)}</button>
-  <div class="msg" id="forgot-msg"></div>
+  <div class="msg" aria-live="polite" id="forgot-msg"></div>
 </form></section>`;
 }
 
@@ -866,7 +871,7 @@ function loginScreen() {
   <label>${esc(l.password)}<input name="password" type="password" autocomplete="current-password" required></label>
   ${SAMPLE ? '' : '<div id="captcha"></div>'}
   <button type="submit">${esc(l.submit)}</button>
-  <div class="msg" id="login-msg"></div>
+  <div class="msg" aria-live="polite" id="login-msg"></div>
 </form>
 <p class="small"><a href="#" data-forgot="email">${esc(l.forgot)}</a></p>
 <p class="small"><a href="${kayitHref()}">${esc(s.promo.noAccount)}</a></p>
@@ -892,6 +897,21 @@ function qrPlaceholder() {
 
 function twoFactorScreen() {
   const t = s.twoFactor;
+  const L = s.live;
+  if (!SAMPLE && mfa.step === 'admin') return `<section class="pp-card pp-narrow"><h1>${esc(L.enrollAdminTitle)}</h1><p class="muted">${esc(L.enrollAdminText)}</p></section>`;
+  // Kod tüketildi ama enroll() düştü: kod yeniden istenmez, sadece kurulum denenir
+  if (!SAMPLE && mfa.step === 'enroll')
+    return `<section class="pp-card pp-narrow"><h1>${esc(L.enrollMailTitle)}</h1>
+<form id="mfa-mail-form">
+  <p class="muted">${esc(L.enrollRetryText)}</p><button type="submit">${esc(L.enrollRetry)}</button>
+  <div class="msg" aria-live="polite" id="mfa-mail-msg"></div>
+</form></section>`;
+  if (!SAMPLE && (mfa.step === 'send' || mfa.step === 'code'))
+    return `<section class="pp-card pp-narrow"><h1>${esc(L.enrollMailTitle)}</h1>
+<form id="mfa-mail-form">
+  ${mfa.step === 'send' ? `<p class="muted">${esc(L.enrollMailText)}</p><div id="captcha"></div><button type="submit">${esc(L.enrollMailSend)}</button>` : `<p class="muted">${esc(L.enrollMailSent)}</p><label>${esc(L.enrollMailCode)}<input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" class="pp-code" required></label><button type="submit">${esc(L.enrollMailConfirm)}</button>`}
+  <div class="msg" aria-live="polite" id="mfa-mail-msg"></div>
+</form></section>`;
   const enrolling = SAMPLE || mfa.qr;
   const qr = SAMPLE ? qrPlaceholder() : mfa.qr ? `<img class="pp-qr" src="${esc(mfa.qr)}" alt="QR">` : '';
   return `<section class="pp-card pp-narrow"><h1>${esc(enrolling && !SAMPLE ? s.live.enrollTitle : t.title)}</h1>
@@ -899,7 +919,7 @@ ${enrolling ? `<p class="muted">${esc(SAMPLE ? t.setup : s.live.enrollText)}</p>
 <form id="tf-form">
   <label>${esc(t.code)}<input id="tf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" class="pp-code"></label>
   <button type="submit">${esc(t.submit)}</button>
-  <div class="msg" id="tf-msg"></div>
+  <div class="msg" aria-live="polite" id="tf-msg"></div>
 </form></section>`;
 }
 
@@ -958,7 +978,7 @@ function countryScreen() {
   return `<section class="pp-card pp-narrow">${legalBack('#/tanitim')}${stepper(1)}<h1>${esc(w.countryTitle)}</h1><p class="muted">${esc(w.countryIntro)}</p>
 <div id="pk-start-country"></div>
 <label class="pp-countrylang">${esc(w.langChoice)}<select id="country-lang">${Object.entries(W.langs ?? { tr: 'Türkçe' }).map(([k, v]) => `<option value="${k}"${k === LANG ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></label>
-<div class="msg" id="country-msg"></div>
+<div class="msg" aria-live="polite" id="country-msg"></div>
 <div class="pp-actions left"><button type="button" id="country-next">${esc(w.next)}</button></div></section>`;
 }
 
@@ -993,7 +1013,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <div class="pp-field"><span>${esc(a.birth)}</span><div class="pp-dob"><select name="birth_day" aria-label="${esc(a.birthDay)}"></select><select name="birth_month" aria-label="${esc(a.birthMonth)}"></select><select name="birth_year" aria-label="${esc(a.birthYear)}"></select></div></div>
     <label>${esc(a.phone)}<span class="pp-phone"><span class="pp-dial" id="apply-dial"></span><input name="phone" type="tel" autocomplete="tel-national"></span></label>
     <label>${esc(a.address)}<textarea name="address" rows="2" placeholder="${esc(w.addressHint)}"></textarea></label>
-    <div class="msg" data-step-msg></div>
+    <div class="msg" aria-live="polite" data-step-msg></div>
     ${nav('data-back-country')}
   </fieldset>
   <fieldset data-step="2" hidden>
@@ -1001,7 +1021,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     ${f(a.channelLinks, '<textarea name="channel_links" rows="2" placeholder="https://t.me/..." autocapitalize="off" spellcheck="false"></textarea>')}
     <p class="muted small">${esc(w.channelHint)}</p>
     ${f(a.followers, '<input name="followers" inputmode="numeric" maxlength="9">')}
-    <div class="msg" data-step-msg></div>
+    <div class="msg" aria-live="polite" data-step-msg></div>
     ${nav('data-back')}
   </fieldset>
   <fieldset data-step="3" hidden>
@@ -1012,7 +1032,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <label><span id="account-label">${esc(a.iban)}</span><input name="account" autocapitalize="characters" autocomplete="off" placeholder="${tr ? 'TR.. .... .... .... .... .... ..' : ''}"></label>
     <p class="muted small" id="account-hint"></p>
     ${tr ? '' : `<p class="muted small">${esc(a.foreignNote)}</p>`}
-    <div class="msg" data-step-msg></div>
+    <div class="msg" aria-live="polite" data-step-msg></div>
     ${nav('data-back')}
   </fieldset>
   <fieldset data-step="4" hidden>
@@ -1026,7 +1046,7 @@ ${rejected ? `<div class="notice">${esc(s.live.rejectedText)}${me.partner.reject
     <label class="pp-check"><input type="checkbox" name="accept_marketing"> <span>${esc(a.marketing)}</span></label>
     ${GDPR_COUNTRIES.includes(myCountry()) ? `<p class="small">${esc(a.gdprRest)} <a href="#" data-legal="gdpr">${esc(a.gdprLink)}</a></p>` : ''}
     <p class="muted small">${esc(a.accuracy)}</p>
-    <div class="msg" id="apply-msg" data-step-msg></div>
+    <div class="msg" aria-live="polite" id="apply-msg" data-step-msg></div>
     <div class="pp-wizard-nav"><button type="button" class="secondary" data-back>${esc(w.back)}</button><button type="submit">${esc(a.submit)}</button></div>
   </fieldset>
 </form></section>`;
@@ -1043,7 +1063,7 @@ function lockScreen() {
   const t = new URLSearchParams(location.hash.split('?')[1] || '').get('t') || '';
   if (lockDoneFlag) return stateScreen(r.lockTitle, r.lockDone);
   if (!/^[a-f0-9]{64}$/.test(t)) return stateScreen(r.lockTitle, r.lockInvalid);
-  return `<section class="pp-card pp-narrow"><h1>${esc(r.lockTitle)}</h1><p class="muted">${esc(r.lockText)}</p><div class="pp-actions left"><button type="button" class="danger" id="lock-btn">${esc(r.lockBtn)}</button></div><div class="msg" id="lock-msg"></div></section>`;
+  return `<section class="pp-card pp-narrow"><h1>${esc(r.lockTitle)}</h1><p class="muted">${esc(r.lockText)}</p><div class="pp-actions left"><button type="button" class="danger" id="lock-btn">${esc(r.lockBtn)}</button></div><div class="msg" aria-live="polite" id="lock-msg"></div></section>`;
 }
 // Temsilcilik başvurusu: yeni hesap gerekmez, partner kaydına bağlıdır
 function repApplyScreen() {
@@ -1057,7 +1077,7 @@ function repApplyScreen() {
   const prior = status === 'rejected' ? `<div class="notice"><b>${esc(r.rejectedTitle)}</b>${a.reject_code && a.reject_code !== 'diger' ? `<br>${esc(s.live.rejectReasonLabel)}: ${esc(r.reasons[a.reject_code] ?? '')}` : ''}${a.reject_detail ? `<br>${esc(a.reject_code === 'diger' ? s.live.rejectReasonLabel : s.live.rejectNoteLabel)}: ${esc(a.reject_detail)}` : ''}</div>` : '';
   // Form, ayrıntılı bilgi e-postası gittikten sonra açılır (e-postadaki düğme buraya gelir)
   if (!me?.partner?.rep_info_sent) {
-    return `<section class="pp-card pp-narrow"><h1>${esc(r.requestTitle)}</h1>${prior}<p class="muted">${esc(r.info)}</p><p class="muted">${esc(r.requestText)}</p><div class="pp-actions left"><button type="button" class="secondary" id="rep-request">${esc(r.requestBtn)}</button></div><div class="msg" id="rep-request-msg"></div></section>`;
+    return `<section class="pp-card pp-narrow"><h1>${esc(r.requestTitle)}</h1>${prior}<p class="muted">${esc(r.info)}</p><p class="muted">${esc(r.requestText)}</p><div class="pp-actions left"><button type="button" class="secondary" id="rep-request">${esc(r.requestBtn)}</button></div><div class="msg" aria-live="polite" id="rep-request-msg"></div></section>`;
   }
   return `<section class="pp-card pp-form"><h1>${esc(r.formTitle)}</h1><p>${esc(r.formIntro)}</p>${prior}
 <form id="rep-form" novalidate>
@@ -1067,7 +1087,7 @@ function repApplyScreen() {
   <label>${esc(r.hours)}<select name="hours"><option value="">${esc(r.hoursPick)}</option><option value="5">${esc(r.h5)}</option><option value="10">${esc(r.h10)}</option><option value="20">${esc(r.h20)}</option><option value="40">${esc(r.h40)}</option></select></label>
   <label class="pp-check"><input type="checkbox" name="accept"> <span><a href="#" data-legal="temsilci">${esc(r.acceptLink)}</a>${esc(r.acceptRest)}</span></label>
   <p class="muted small">${esc(r.calm)}</p>
-  <div class="msg" id="rep-msg"></div>
+  <div class="msg" aria-live="polite" id="rep-msg"></div>
   <button type="submit">${esc(r.submit)}</button>
 </form></section>`;
 }
@@ -1079,7 +1099,7 @@ const contractScreen = () => {
   const v = contractVersionNow();
   return `<section class="pp-card pp-narrow"><h1>${esc(s.live.contractTitle)}</h1><p class="muted">${esc(fmt(s.live.contractText, { v }))}</p>
 <label class="pp-check"><input type="checkbox" id="contract-ok"> <span><a href="#" data-legal="sozlesme">${esc(s.live.contractRead)}</a>${esc(fmt(s.live.contractCheck, { v }))}</span></label>
-<div class="pp-actions left"><button type="button" id="contract-accept">${esc(s.live.contractButton)}</button></div><div class="msg" id="contract-msg"></div></section>`;
+<div class="pp-actions left"><button type="button" id="contract-accept">${esc(s.live.contractButton)}</button></div><div class="msg" aria-live="polite" id="contract-msg"></div></section>`;
 };
 const errText = (e) => {
   const raw = String(e?.message ?? e ?? '');
@@ -1173,7 +1193,7 @@ function adminApplicationsScreen() {
   ${A.checks.map((c, i) => `<label class="pp-check"><input type="checkbox" data-check="${i}"> <span>${esc(c)}</span></label>`).join('')}`}
   <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(s.live.rejectReasons).map(([k, t]) => `<option value="${k}"${suggested === 'reject' && info?.review?.reject_code === k ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
   <div class="pp-actions left"><button type="button" data-decide-app="1">${esc(A.approve)}</button><button type="button" class="danger" data-decide-app="0">${esc(A.reject)}</button></div>
-  <div class="msg" data-amsg></div>
+  <div class="msg" aria-live="polite" data-amsg></div>
 </details>`;
     })
     .join('');
@@ -1200,7 +1220,7 @@ function adminRepAppsScreen() {
   ${ok ? '' : `<div class="notice">${esc(r.needPartner)}</div>`}
   <div class="pp-grid2 tight" data-reject-box hidden><label>${esc(s.live.rejectReasonLabel)}<select data-reject><option value="">${esc(A.rejectPick)}</option>${Object.entries(r.reasons).map(([k, t]) => `<option value="${k}">${esc(t)}</option>`).join('')}</select></label><label>${esc(A.rejectDetail)}<input data-reject-detail maxlength="300"></label></div>
   <div class="pp-actions left"><button type="button" data-rep-decide="1"${ok ? '' : ' disabled'}>${esc(A.approve)}</button><button type="button" class="danger" data-rep-decide="0">${esc(A.reject)}</button></div>
-  <div class="msg" data-amsg></div>
+  <div class="msg" aria-live="polite" data-amsg></div>
 </details>`;
     })
     .join('');
@@ -1299,7 +1319,7 @@ function adminPartnersScreen() {
   </div>
   <label class="pp-check"><input type="checkbox" name="is_rep"${edit.is_rep ? ' checked' : ''}> ${esc(A.isRep)}</label>
   <label class="pp-check"><input type="checkbox" name="trial"${edit.trial ? ' checked' : ''}> ${esc(A.trial)}</label>
-  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.status === 'approved' ? `<button type="button" class="danger" id="psuspend" data-to="suspended">${esc(A.suspendBtn)}</button>` : edit.status === 'suspended' && !edit.security_locked_at ? `<button type="button" class="secondary" id="psuspend" data-to="approved">${esc(A.unsuspendBtn)}</button>` : ''}${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" id="pmsg"></div>
+  <div class="pp-actions left"><button type="button" id="psave">${esc(A.save)}</button><button type="button" class="secondary" id="pmfa">${esc(A.mfaReset)}</button>${edit.status === 'approved' ? `<button type="button" class="danger" id="psuspend" data-to="suspended">${esc(A.suspendBtn)}</button>` : edit.status === 'suspended' && !edit.security_locked_at ? `<button type="button" class="secondary" id="psuspend" data-to="approved">${esc(A.unsuspendBtn)}</button>` : ''}${edit.security_locked_at ? `<button type="button" class="danger" id="punlock">${esc(s.apply.rep.unlock)}</button>` : ''}</div><div class="msg" aria-live="polite" id="pmsg"></div>
   ${!CHANNEL_CHECK_OPEN ? '' : `<h4 class="pp-sub">${esc(A.channelHistory)}</h4>${
     (admin.checks ?? []).filter((c) => c.partner_id === edit.id).length
       ? `<ul class="pp-list small">${admin.checks
@@ -1351,7 +1371,7 @@ function adminSettingsScreen() {
 </div>
 <p class="muted small">${esc(A.contractVersionNote)}</p>
 <label class="pp-check"><input type="checkbox" data-set="foreign_payouts_open"${val('foreign_payouts_open') ? ' checked' : ''}> ${esc(A.foreign)}</label>
-<div class="pp-actions left"><button type="button" id="ssave">${esc(A.save)}</button></div><div class="msg" id="smsg"></div></section>
+<div class="pp-actions left"><button type="button" id="ssave">${esc(A.save)}</button></div><div class="msg" aria-live="polite" id="smsg"></div></section>
 <section class="pp-card"><h3>${esc(A.repTiers)}</h3>${table(s.rep.tierCols, (val('rep_tiers') ?? []).map((t, i, arr) => [`${int(t.from)}${arr[i + 1] ? ` – ${int(arr[i + 1].from - 1)}` : '+'}`, pctRate(t.rate)]))}
 <p class="muted small">${esc(A.fx)}: ${esc(val('fx_usd_try') ?? '–')}</p></section>`;
 }
@@ -1369,6 +1389,109 @@ function adminRepsLiveScreen() {
     return [`<b>${esc(r.priv.full_name || r.partner_no)}</b>`, '–', int(mine.length), int(fresh), '–', '–', avg == null ? '–' : `${avg.toFixed(1)} / 5`, '–', '–', pctRate(Number(r.rep_rate)), esc(r.rep_auto_assign ? a.on : a.off)];
   });
   return `<p class="muted">${esc(a.intro)}</p>${table(a.cols, rows)}`;
+}
+
+// Üyelik ödemeleri ve hile işaretleri (2026-11-07): üyelik ödemesi yönetici onayı olmadan çekilebilir olmaz,
+// hile işaretli partnerin ödemesi yönetici "gerçek" demedikçe yazılmaz
+const ADMIN_GATE_ERRORS = ['yonetici_degil', 'mfa_pin_gerekli'];
+const isAdminGateError = (e) => ADMIN_GATE_ERRORS.some((k) => String(e?.message ?? e ?? '').includes(k));
+const adminBlockedScreen = () => stateScreen(s.live.enrollAdminTitle, s.live.enrollAdminText);
+const tl = (v) => money(Number(v ?? 0), 'TRY');
+
+function adminBonusTabs() {
+  const B = s.adminLive.bonus;
+  const counts = { bonus: (admin?.bonuses ?? []).length, flags: (admin?.flags ?? []).length };
+  const tab = state.bonusTab === 'flags' ? 'flags' : 'bonus';
+  const btn = (k, label) => `<button type="button" role="tab" aria-selected="${tab === k}" class="${tab === k ? 'on' : ''}" data-bonus-tab="${k}">${esc(label)} (${counts[k]})</button>`;
+  return `<div class="pp-seg" role="tablist">${btn('bonus', B.tabBonus)}${btn('flags', B.tabFlags)}</div>${tab === 'flags' ? adminFlagsScreen() : adminBonusScreen()}`;
+}
+
+function bonusSignals(x) {
+  const B = s.adminLive.bonus;
+  const out = [];
+  if (x.partner_locked) out.push(`<span class="pill cancelled" title="${esc(B.lockedNote)}">${esc(B.locked)}</span>`);
+  if (x.partner_status && x.partner_status !== 'approved') out.push(`<span class="pill" title="${esc(B.statusNote)}">${esc(s.adminLive.statuses[x.partner_status] ?? x.partner_status)}</span>`);
+  if (Number(x.same_device) > 0) out.push(`<span class="pill cancelled">${esc(fmt(B.sameDevice, { n: int(Number(x.same_device)) }))}</span>`);
+  for (const f of x.flags ?? []) {
+    const label = `${B.flagShort[f.kind] ?? f.kind}${f.admin_decision === 'fraud' ? ` (${B.fraudMark})` : ''}`;
+    out.push(`<span class="pill cancelled" title="${esc(s.flags.kinds[f.kind] ?? '')}">🚩 ${esc(label)}</span>`);
+  }
+  return out.length ? out.join(' ') : `<span class="muted small">${esc(B.noSignals)}</span>`;
+}
+
+function adminBonusScreen() {
+  const A = s.adminLive;
+  const B = A.bonus;
+  const list = admin?.bonuses ?? [];
+  const err = admin?.bonusError ? `<div class="notice">${esc(errText(admin.bonusError))}</div>` : '';
+  const who = (x) => `<b>${esc(x.partner_name || x.partner_no)}</b><br><span class="muted small pp-mono">${esc(x.partner_no)}</span>`;
+  const member = (x) => `<span class="pp-mono">${esc(x.account_no ?? '–')}</span><br><small class="muted">${x.registered_at ? date(Date.parse(x.registered_at)) : '–'}${x.country ? ` · ${esc(x.country)}` : ''}</small>`;
+  const rows = list.map((x) => [
+    `<label class="pp-check"><input type="checkbox" data-bonus-pick="${esc(x.id)}"${x.partner_locked ? ' disabled' : ''}><span class="sr">${esc(B.pick)}</span></label>`,
+    `${date(Date.parse(x.created_at))}<br><small class="muted">${esc(x.period ?? '')}</small>`,
+    who(x),
+    member(x),
+    `<b>${tl(x.amount)}</b>`,
+    bonusSignals(x),
+    `<button type="button" class="small" data-bonus="${esc(x.id)}:1"${x.partner_locked ? ` disabled title="${esc(B.lockedNote)}"` : ''}>${esc(A.approve)}</button> <button type="button" class="secondary small" data-bonus="${esc(x.id)}:0">${esc(A.reject)}</button>`,
+  ]);
+  const head = list.length
+    ? `<p><b>${esc(fmt(B.summary, { n: int(list.length), total: tl(sum(list, (x) => Number(x.amount))) }))}</b></p>
+<div class="pp-actions left"><label class="pp-check"><input type="checkbox" id="bonus-all"> <span>${esc(B.pickAll)}</span></label><button type="button" id="bonus-bulk">${esc(B.bulk)}</button></div>`
+    : '';
+  const done = admin?.bonusDone ?? [];
+  const recent = done.length
+    ? `<section class="pp-card"><h3>${esc(B.recent)}</h3>${table(
+        B.recentCols,
+        done.map((x) => {
+          const ok = x.decision === true;
+          return [
+            x.decided_at ? date(Date.parse(x.decided_at)) : '–',
+            who(x),
+            member(x),
+            tl(x.amount),
+            `<span class="pill ${ok ? 'active' : 'cancelled'}">${esc(ok ? B.decisions.approved : B.decisions.rejected)}</span>`,
+            `<span class="small">${esc(x.note ?? '')}</span>`,
+          ];
+        }),
+      )}</section>`
+    : '';
+  return `${err}<p class="muted">${esc(B.intro)}</p>${head}<div class="msg" aria-live="polite" id="bmsg"></div>${table(B.cols, rows, B.none)}${recent}`;
+}
+
+function adminFlagsScreen() {
+  const F = s.flags;
+  const B = s.adminLive.bonus;
+  const list = admin?.flags ?? [];
+  const err = admin?.flagsError ? `<div class="notice">${esc(errText(admin.flagsError))}</div>` : '';
+  const stat = (k, v, bad) => `<div class="pp-row"><span>${esc(k)}</span><b class="${bad ? 'pp-bad' : ''}">${v}</b></div>`;
+  const top = `${err}<p class="muted">${esc(B.flagsIntro)}</p><div class="msg" aria-live="polite" id="afmsg"></div>`;
+  if (!list.length) return `${top}<p class="pp-empty">${esc(B.flagsNone)}</p>`;
+  return `${top}<p class="muted small">${esc(F.privacy)}</p>
+${list
+  .map((x) => {
+    const d = x.details ?? {};
+    const stats = [
+      d.members != null ? stat(F.members, int(Number(d.members))) : '',
+      d.sub_rate != null ? stat(F.subRate, pct(Number(d.sub_rate)), Number(d.sub_rate) < 0.02) : '',
+      d.same_device != null ? stat(F.sameDevice, int(Number(d.same_device)), Number(d.same_device) > 0) : '',
+      d.burst_10min != null ? stat(B.burst, int(Number(d.burst_10min)), Number(d.burst_10min) >= 10) : '',
+    ].join('');
+    const rep = x.rep_decision
+      ? `<p><span class="pill ${x.rep_decision === 'genuine' ? 'active' : 'cancelled'}">${esc(B.repSaid[x.rep_decision] ?? x.rep_decision)}</span></p>${x.rep_note ? `<p class="muted small pp-pre">${esc(x.rep_note)}</p>` : ''}`
+      : `<p class="muted small">${esc(B.repNone)}</p>`;
+    return `<section class="pp-card" data-aflag="${esc(x.id)}" data-name="${esc(x.partner_name || x.partner_no)}">
+  <div class="pp-cardhead"><h3>${esc(x.partner_name || x.partner_no)}</h3><span class="muted small"><span class="pp-mono">${esc(x.partner_no)}</span> · ${date(Date.parse(x.created_at))}</span></div>
+  <p>${esc(F.kinds[x.kind] ?? x.kind)}</p>
+  <div class="pp-grid2">${stats}</div>
+  ${stat(B.heldMembers, int(Number(x.held_members ?? 0)), Number(x.held_members) > 0)}
+  ${rep}
+  <label>${esc(B.flagNote)}<textarea rows="2" maxlength="500" data-anote></textarea></label>
+  <div class="pp-actions left"><button type="button" data-aflag-decide="genuine">${esc(B.genuine)}</button><button type="button" class="danger" data-aflag-decide="fraud">${esc(B.fraud)}</button></div>
+  <div class="msg" aria-live="polite" data-afmsg></div>
+</section>`;
+  })
+  .join('')}`;
 }
 
 // ---- Yönlendirme ----
@@ -1390,6 +1513,8 @@ const ROUTES = {
   'yonetici/partnerler': { title: s.adminLive.partners, render: () => errorsWarn() + adminPartnersScreen() },
   'yonetici/odemeler': { title: s.adminLive.payouts, render: () => errorsWarn() + adminPayoutsScreen() },
   'yonetici/ayarlar': { title: s.adminLive.settings, render: () => errorsWarn() + adminSettingsScreen() },
+  'yonetici/uyelik-odemeleri': { title: s.adminLive.bonus.title, render: () => errorsWarn() + adminBonusTabs() },
+  'yonetici/dogrulama': { title: s.adminLive.group, render: adminBlockedScreen },
   tanitim: { title: s.landing.title, render: landingScreen, public: true },
   giris: { title: s.login.title, render: loginScreen, public: true },
   'iki-adim': { title: s.twoFactor.title, render: twoFactorScreen, public: true },
@@ -1409,7 +1534,7 @@ const G_REPORTS = [s.menu.reports, [['raporlar/ozet', s.menu.summary], ['raporla
 const G_REP = [s.rep.group, [['temsilci', s.rep.menu], ['temsilci/isaretler', s.flags.menu]]];
 const G_ADMIN = [
   s.adminLive.group,
-  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
+  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/uyelik-odemeleri', s.adminLive.bonus.menu], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
 ];
 // Önizleme (?ornek=1): her rolün menüsü elle seçilir. Bir kişi hem partner hem temsilci olabilir.
 const MENUS = {
@@ -1471,7 +1596,7 @@ function liveMenu() {
   if (isPartner() && me.partner.is_rep) groups.push(G_REP);
   if (isPartner()) groups.push(G_PROMO, G_REPORTS);
   if (me?.admin) {
-    groups.push(G_ADMIN);
+    groups.push(adminBlocked ? [s.adminLive.group, [['yonetici/dogrulama', s.adminLive.group]]] : G_ADMIN);
     if (!isPartner()) groups.push([s.apply.title, [[me?.partner?.status === 'application' ? 'inceleniyor' : 'basvuru', s.apply.title]]]);
   }
   return groups;
@@ -1486,7 +1611,7 @@ const readRole = () => {
 };
 // Önizlemede adresle görünüm seçme: ?ornek=1&gorunum=partner | temsilci | ikisi | yonetici
 const ROLE_PARAM = { partner: 'partner', temsilci: 'rep', ikisi: 'both', yonetici: 'admin' };
-const fromUrl = ROLE_PARAM[new URLSearchParams(location.search).get('gorunum')];
+const fromUrl = SAMPLE ? ROLE_PARAM[new URLSearchParams(location.search).get('gorunum')] : undefined;
 state.role = fromUrl || (MENUS[readRole()] ? readRole() : 'partner');
 const menus = () => (SAMPLE ? MENUS[state.role] : liveMenu());
 const allowedKeys = () => menus().flatMap(([, items]) => items.map(([k]) => k));
@@ -1560,6 +1685,7 @@ async function boot() {
       stage = 'login';
       return render();
     }
+    const email = session.user?.email || '';
     // Erişim ve doğrulama durumu aynı anda okunur; ikisi de ağ isteği
     const [meNow, m] = await Promise.all([live.me(), live.mfa()]);
     me = meNow;
@@ -1568,17 +1694,16 @@ async function boot() {
       return render();
     }
     if (m.current !== 'aal2') {
-      if (m.verified) mfa = { factorId: m.verified.id, qr: null, secret: null };
-      else {
-        const e = await live.enroll();
-        mfa = { factorId: e.id, qr: e.totp.qr_code, secret: e.totp.secret };
-      }
+      // Doğrulayıcı kurulumu kendiliğinden başlamaz: yönetici için hiç kurulamaz (hesap sahibi önceden kurar),
+      // partner için önce e-posta kutusu kod ile doğrulanır
+      if (m.verified) mfa = { factorId: m.verified.id, qr: null, secret: null, step: null, email };
+      else mfa = { factorId: null, qr: null, secret: null, step: me.admin ? 'admin' : 'send', email };
       stage = 'mfa';
       return render();
     }
     if (Number(me.settings?.fx_usd_try)) FX.USD = Number(me.settings.fx_usd_try);
     if (Number(me.settings?.fx_eur_try)) FX.EUR = Number(me.settings.fx_eur_try);
-    [data, admin] = await Promise.all([isPartner() ? live.loadPartner(me) : EMPTY(), me.admin ? live.loadAdmin() : null]);
+    [data, admin] = await Promise.all([isPartner() ? live.loadPartner(me) : EMPTY(), me.admin ? loadAdminSafe() : null]);
     stage = needsContract() ? 'contract' : isPartner() || me.admin ? 'panel' : me.partner?.status === 'application' ? 'review' : 'apply';
   } catch (e) {
     state.error = errText(e);
@@ -1590,8 +1715,21 @@ async function boot() {
 async function reload() {
   me = await live.me();
   if (isPartner()) data = await live.loadPartner(me);
-  if (me.admin) admin = await live.loadAdmin();
+  if (me.admin) admin = await loadAdminSafe();
   rerender();
+}
+
+// Yönetici verisi: kapı (yonetici_degil / mfa_pin_gerekli) reddederse panel genel hata yerine kurulum bilgisini gösterir
+async function loadAdminSafe() {
+  try {
+    const a = await live.loadAdmin();
+    adminBlocked = false;
+    return a;
+  } catch (e) {
+    if (!isAdminGateError(e)) throw e;
+    adminBlocked = true;
+    return null;
+  }
 }
 
 // Turnstile betiği sayfayla birlikte geç yüklenebilir: hazır değilse kısa aralıkla tekrar denenir; kutu bir kez çizilir
@@ -1814,7 +1952,7 @@ function bind(key) {
       $('#iban-msg').textContent = `${s.profile.ibanNote} ${s.profile.previewOnly}`;
       return;
     }
-    $('#iban-msg').outerHTML = `<form id="iban-form"><label>${esc(s.live.ibanNew)}<input name="iban" required></label><label>${esc(s.live.holderNew)}<input name="holder" required></label><button type="submit">${esc(s.live.ibanSave)}</button><p class="muted small">${esc(s.profile.ibanNote)}</p><div class="msg" id="iban-fmsg"></div></form>`;
+    $('#iban-msg').outerHTML = `<form id="iban-form"><label>${esc(s.live.ibanNew)}<input name="iban" required></label><label>${esc(s.live.holderNew)}<input name="holder" required></label><button type="submit">${esc(s.live.ibanSave)}</button><p class="muted small">${esc(s.profile.ibanNote)}</p><div class="msg" aria-live="polite" id="iban-fmsg"></div></form>`;
     $('#iban-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const f = e.currentTarget.elements;
@@ -1917,6 +2055,54 @@ function bind(key) {
       await boot();
     });
   });
+  $('#mfa-mail-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = $('#mfa-mail-msg');
+    const btn = e.currentTarget.querySelector('button');
+    if (mfa.step === 'send') {
+      if (window.turnstile && !captchaToken) {
+        msg.textContent = s.live.captchaWait;
+        msg.className = 'msg error';
+        return;
+      }
+      act(btn, msg, async () => {
+        try {
+          await live.sendEnrollCode(mfa.email, captchaToken);
+        } catch (err) {
+          if (window.turnstile) window.turnstile.reset();
+          captchaToken = null;
+          throw err;
+        }
+        captchaToken = null;
+        mfa.step = 'code';
+        rerender();
+      });
+      return;
+    }
+    // Kod daha önce doğrulandıysa (OTP tüketildi) sadece kurulum yeniden denenir
+    if (mfa.step === 'enroll') {
+      act(btn, msg, async () => {
+        const en = await live.enroll();
+        mfa = { factorId: en.id, qr: en.totp.qr_code, secret: en.totp.secret, step: null, email: mfa.email };
+        rerender();
+      });
+      return;
+    }
+    const code = e.currentTarget.elements.code.value.trim();
+    if (!/^\d{6}$/.test(code)) {
+      msg.textContent = s.login.reset.codeInvalid;
+      msg.className = 'msg error';
+      return;
+    }
+    act(btn, msg, async () => {
+      await live.confirmEnrollCode(mfa.email, code);
+      // Kod tüketildi: enroll düşerse adım 'enroll' kalır, aynı kod yeniden sorulmaz
+      mfa.step = 'enroll';
+      const en = await live.enroll();
+      mfa = { factorId: en.id, qr: en.totp.qr_code, secret: en.totp.secret, step: null, email: mfa.email };
+      rerender();
+    });
+  });
   $('#tf-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     const v = $('#tf-code').value.trim();
@@ -1931,7 +2117,7 @@ function bind(key) {
     }
     act(e.currentTarget.querySelector('button'), $('#tf-msg'), async () => {
       await live.verify(mfa.factorId, v);
-      mfa = { factorId: null, qr: null, secret: null };
+      mfa = { factorId: null, qr: null, secret: null, step: null, email: '' };
       await boot();
     });
   });
@@ -2283,6 +2469,7 @@ function bind(key) {
     b.addEventListener('click', () => {
       if (SAMPLE) return alert(s.profile.previewOnly);
       const win = window.open('', '_blank');
+      if (win) win.opener = null; // açılan sekme bu panele erişemesin
       live
         .docUrl(b.dataset.doc)
         .then((u) => (win.location = u))
@@ -2482,6 +2669,79 @@ function bind(key) {
       });
     }),
   );
+  // Üyelik ödemeleri (2026-11-07): tek tek ya da seçilenler onaylanır; reddetmeden önce onay ve isteğe bağlı gerekçe
+  $$('[data-bonus-tab]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.bonusTab = b.dataset.bonusTab;
+      rerender();
+    }),
+  );
+  const bonusOf = (id) => (admin?.bonuses ?? []).find((x) => String(x.id) === String(id));
+  const flash = (sel, text, error) => {
+    const m = app.querySelector(sel);
+    if (!m) return;
+    m.textContent = text;
+    m.className = error ? 'msg error' : 'msg';
+  };
+  $$('[data-bonus]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const [id, ok] = b.dataset.bonus.split(':');
+      const approve = ok === '1';
+      const x = bonusOf(id);
+      let note = null;
+      if (!approve) {
+        note = prompt(fmt(s.adminLive.bonus.rejectPrompt, { name: x?.partner_name || x?.partner_no || '', amount: tl(x?.amount) }), '');
+        if (note === null) return;
+      }
+      act(b, $('#bmsg'), async () => {
+        await live.decideMemberBonus(Number(id), approve, note?.trim() || null);
+        await reload();
+        flash('#bmsg', s.live.saved);
+      });
+    }),
+  );
+  $('#bonus-all')?.addEventListener('change', (e) =>
+    $$('[data-bonus-pick]').forEach((c) => {
+      if (!c.disabled) c.checked = e.target.checked;
+    }),
+  );
+  $('#bonus-bulk')?.addEventListener('click', (e) => {
+    const B = s.adminLive.bonus;
+    const ids = [...$$('[data-bonus-pick]:checked')].map((c) => c.dataset.bonusPick);
+    if (!ids.length) return flash('#bmsg', B.bulkNone, true);
+    const total = sum(ids, (id) => Number(bonusOf(id)?.amount ?? 0));
+    if (!confirm(fmt(B.bulkConfirm, { n: int(ids.length), total: tl(total) }))) return;
+    act(e.currentTarget, $('#bmsg'), async () => {
+      let done = 0;
+      let firstErr = null;
+      // Sırayla: her karar ayrı kayda geçer; yetki hatasında durulur
+      for (const id of ids) {
+        try {
+          await live.decideMemberBonus(Number(id), true, null);
+          done++;
+        } catch (err) {
+          firstErr ??= err;
+          if (isAdminGateError(err)) break;
+        }
+      }
+      await reload();
+      const fail = ids.length - done;
+      flash('#bmsg', fail ? fmt(B.bulkFailed, { ok: int(done), fail: int(fail), err: errText(firstErr) }) : fmt(B.bulkDone, { ok: int(done) }), fail > 0);
+    });
+  });
+  // Hile işareti: yönetici kararı ('gerçek' bekletmeyi kaldırır, 'hile' sürdürür)
+  $$('[data-aflag-decide]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const card = b.closest('[data-aflag]');
+      const decision = b.dataset.aflagDecide;
+      if (decision === 'fraud' && !confirm(fmt(s.adminLive.bonus.fraudConfirm, { name: card.dataset.name }))) return;
+      act(b, card.querySelector('[data-afmsg]'), async () => {
+        await live.decideAdminFlag(Number(card.dataset.aflag), decision, card.querySelector('[data-anote]').value.trim());
+        await reload();
+        flash('#afmsg', s.adminLive.bonus.decided);
+      });
+    }),
+  );
   $('#bankfile')?.addEventListener('click', (e) =>
     act(e.currentTarget, null, async () =>
       downloadCsv(
@@ -2550,6 +2810,7 @@ window.addEventListener('hashchange', async () => {
     await live.signOut();
     me = null;
     admin = null;
+    adminBlocked = false;
     data = EMPTY();
     history.replaceState(null, '', '#/giris');
     return boot();
