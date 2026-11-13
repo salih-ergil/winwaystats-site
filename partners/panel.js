@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=e1b8aa27ab';
-import { createLive } from './live.js?v=42e6bb7d0c';
+import { createLive } from './live.js?v=a6ba4734e6';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=29fc971418';
 
 const W = window.WWP;
@@ -1420,7 +1420,7 @@ function adminPrizesScreen() {
 ${detail}
 ${table(['Ödül', 'Kullanıcı', 'Puan', 'Tutar', 'Aşama', 'Talep'], rows, 'Bu filtrede talep yok.')}
 ${adminPrizeSummary()}
-${adminPrizeTestGrant()}`;
+${me?.admin ? adminPrizeTestGrant() : ''}`;
 }
 
 function adminPrizeDetail(d) {
@@ -1428,7 +1428,7 @@ function adminPrizeDetail(d) {
   const st = d.status;
   const btn = (action, label, cls = '') => `<button type="button" class="${cls}" data-prize-act="${action}">${esc(label)}</button>`;
   const actions = [];
-  if (st === 'inceleniyor') actions.push(btn('onayla', 'Onayla (hazırlanıyor)'));
+  if (st === 'inceleniyor') actions.push(btn('onayla', d.grp === 'showcase' ? 'Onayla (teslim bilgisi istenir)' : 'Onayla (hazırlanıyor)'));
   if (['bilgi_bekleniyor', 'inceleniyor', 'hazirlaniyor'].includes(st)) actions.push(btn('reddet', 'Reddet (puan iade)', 'secondary'));
   if (st === 'yolda') actions.push(btn('teslim', 'Teslim edildi'));
   if (['hazirlaniyor', 'yolda'].includes(st)) actions.push(btn('teslim_edilemedi', d.attempts >= 1 ? 'Teslim edilemedi (2. kez → iade)' : 'Teslim edilemedi (1. deneme)', 'secondary'));
@@ -1445,7 +1445,7 @@ function adminPrizeDetail(d) {
   <div><b>Kullanıcı:</b> ${esc(d.username)} · ${esc(d.email ?? '')}<br><span class="muted small">Hesap: ${esc(prizeDate(d.account_created))} · son 30 günde ${int(Number(d.coupons_30d ?? 0))} kupon · diğer talep ${int(Number(d.other_claims ?? 0))} · harcanabilir puan ${int(Math.round(Number(d.spendable ?? 0)))}</span></div>
   <div><b>Puan / tutar:</b> ${int(Number(d.points))} · ${tl(d.value_tl)}<br><span class="muted small">Talep: ${esc(prizeDate(d.created_at))}${d.attempts ? ` · teslim denemesi ${int(d.attempts)}` : ''}</span></div>
 </div>
-<div class="pp-card inner"><b>Teslim bilgisi</b><br>${d.grp === 'voucher' ? `E-posta: ${esc(del.email ?? '–')}` : del.name ? `${esc(del.name)} · ${esc(del.phone)}<br>${esc(del.address ?? '')} ${esc(del.city ?? '')}<br><span class="muted small">18 yaş beyanı: ${del.adult ? 'evet' : 'hayır'}</span>` : '<span class="muted">Henüz girilmedi.</span>'}
+<div class="pp-card inner"><b>Teslim bilgisi</b><br>${d.grp === 'voucher' ? `E-posta: ${esc(del.email ?? '–')}` : del.name ? `${esc(del.name)} · T.C. ${esc(del.tc ?? '–')} · ${esc(del.phone)}<br>${esc(del.address ?? '')} ${esc(del.district ?? '')} ${esc(del.city ?? '')} ${esc(del.postal ?? '')}${del.companion ? `<br>İkinci kişi: ${esc(del.companion)}` : ''}${del.note ? `<br>Not: ${esc(del.note)}` : ''}<br><span class="muted small">18 yaş beyanı: ${del.adult ? 'evet' : 'hayır'}</span>` : '<span class="muted">Henüz girilmedi.</span>'}
 ${d.code ? `<br>Kod: <code>${esc(d.code)}</code>` : ''}${d.tracking_no ? `<br>Kargo: ${esc(d.cargo_company ?? '')} · ${esc(d.tracking_no)}` : ''}${d.planned_date ? `<br>Tarih: ${esc(d.planned_date)}` : ''}</div>
 ${codeForm}${cargoForm}${planForm}
 <div class="pp-actions left">${actions.join(' ')}</div>
@@ -1679,6 +1679,8 @@ const langSelect = () =>
     .map(([k, v]) => `<option value="${k}"${k === LANG ? ' selected' : ''}>${esc(v)}</option>`)
     .join('')}</select></label>`;
 const isPartner = () => ['approved', 'suspended'].includes(me?.partner?.status);
+// Ödül ekibi (2026-11-13; prize_admins): partner yöneticisi değil, sadece Ödül Talepleri
+const isPrizeOnly = () => !!me?.prize_admin && !me?.admin;
 // Gerçek mod: menü hesabın durumundan çıkar
 function liveMenu() {
   const groups = [];
@@ -1686,6 +1688,7 @@ function liveMenu() {
   if (isPartner() && !me.partner.is_rep) groups.push([s.apply.rep.menu, [['temsilcilik', s.apply.rep.menu]]]);
   if (isPartner() && me.partner.is_rep) groups.push(G_REP);
   if (isPartner()) groups.push(G_PROMO, G_REPORTS);
+  if (isPrizeOnly()) groups.push(['Ödül Talepleri', [['yonetici/odul-talepleri', 'Ödül Talepleri']]]);
   if (me?.admin) {
     groups.push(adminBlocked ? [s.adminLive.group, [['yonetici/dogrulama', s.adminLive.group]]] : G_ADMIN);
     if (!isPartner()) groups.push([s.apply.title, [[me?.partner?.status === 'application' ? 'inceleniyor' : 'basvuru', s.apply.title]]]);
@@ -1794,8 +1797,8 @@ async function boot() {
     }
     if (Number(me.settings?.fx_usd_try)) FX.USD = Number(me.settings.fx_usd_try);
     if (Number(me.settings?.fx_eur_try)) FX.EUR = Number(me.settings.fx_eur_try);
-    [data, admin] = await Promise.all([isPartner() ? live.loadPartner(me) : EMPTY(), me.admin ? loadAdminSafe() : null]);
-    stage = needsContract() ? 'contract' : isPartner() || me.admin ? 'panel' : me.partner?.status === 'application' ? 'review' : 'apply';
+    [data, admin] = await Promise.all([isPartner() ? live.loadPartner(me) : EMPTY(), me.admin ? loadAdminSafe() : isPrizeOnly() ? live.loadPrizeAdmin() : null]);
+    stage = needsContract() ? 'contract' : isPartner() || me.admin || isPrizeOnly() ? 'panel' : me.partner?.status === 'application' ? 'review' : 'apply';
   } catch (e) {
     state.error = errText(e);
     stage = 'error';
@@ -1807,6 +1810,7 @@ async function reload() {
   me = await live.me();
   if (isPartner()) data = await live.loadPartner(me);
   if (me.admin) admin = await loadAdminSafe();
+  else if (isPrizeOnly()) admin = await live.loadPrizeAdmin();
   rerender();
 }
 

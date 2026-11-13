@@ -302,6 +302,11 @@ export function createLive(W) {
       };
     },
     // Ödül talepleri yönetimi (2026-11-13; supabase/migrations/20261113180000_odul_talepleri.sql)
+    // Sadece ödül ekibi (prize_admins; partner yönetimine erişimi yok): yalnız ödül talepleri okunur
+    async loadPrizeAdmin() {
+      const [prizeClaims, prizeSummary] = await Promise.all([rpc('admin_prize_claims', {}), rpc('admin_prize_summary')]);
+      return { prizeClaims: prizeClaims ?? [], prizeSummary: prizeSummary ?? null, prizeOnly: true };
+    },
     prizeClaim: (id) => rpc('admin_prize_claim', { p_claim: id }),
     prizeAction: (id, action, data) => rpc('admin_prize_action', { p_claim: id, p_action: action, p_data: data ?? {} }),
     prizeTestGrant: (username, points) => rpc('admin_prize_test_grant', { p_username: username, p_points: points }),
