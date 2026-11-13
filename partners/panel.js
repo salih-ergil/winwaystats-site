@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=e1b8aa27ab';
-import { createLive } from './live.js?v=8f72958529';
+import { createLive } from './live.js?v=42e6bb7d0c';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=29fc971418';
 
 const W = window.WWP;
@@ -1391,6 +1391,96 @@ function adminRepsLiveScreen() {
   return `<p class="muted">${esc(a.intro)}</p>${table(a.cols, rows)}`;
 }
 
+// ---- Ödül talepleri (Salih, 2026-11-13) ----
+// Sadece yönetici (partner_admins + iki adımlı doğrulama). Metinler yalnız Türkçe: ekranı sadece Salih kullanır.
+// Aşamalar: bilgi_bekleniyor → inceleniyor → hazirlaniyor → yolda → teslim_edildi; reddedildi / iptal / iade puanı geri verir.
+const PRIZE_STATUS = {
+  bilgi_bekleniyor: 'Teslim bilgisi bekleniyor', inceleniyor: 'İnceleniyor', hazirlaniyor: 'Hazırlanıyor', yolda: 'Kargoda / planlandı',
+  teslim_edildi: 'Teslim edildi', reddedildi: 'Reddedildi', iptal: 'Kullanıcı iptal etti', iade: 'Teslim edilemedi (iade)',
+  goruntulendi: 'Teslim bilgisi görüntülendi', not: 'Not',
+};
+const PRIZE_DONE = ['teslim_edildi', 'reddedildi', 'iptal', 'iade'];
+const prizeName = (id) => String(id ?? '').replace(/-/g, ' ');
+const prizePill = (st) => `<span class="pill ${st === 'teslim_edildi' ? 'active' : PRIZE_DONE.includes(st) ? 'free' : 'cancelled'}">${esc(PRIZE_STATUS[st] ?? st)}</span>`;
+const prizeDate = (v) => (v ? new Date(v).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' }) : '–');
+
+function adminPrizesScreen() {
+  if (admin?.prizeError) return stateScreen('Ödül talepleri okunamadı', errText(admin.prizeError));
+  const all = admin?.prizeClaims ?? [];
+  const f = state.prizeFilter ?? 'acik';
+  const list = all.filter((c) => (f === 'acik' ? !PRIZE_DONE.includes(c.status) : f === 'biten' ? PRIZE_DONE.includes(c.status) : f === 'deneme' ? c.is_test : f === 'gercek' ? !c.is_test : true));
+  const cnt = (k) => all.filter((c) => (k === 'acik' ? !PRIZE_DONE.includes(c.status) : k === 'biten' ? PRIZE_DONE.includes(c.status) : k === 'deneme' ? c.is_test : k === 'gercek' ? !c.is_test : true)).length;
+  const tab = (k, label) => `<button type="button" role="tab" aria-selected="${f === k}" class="${f === k ? 'on' : ''}" data-prize-filter="${k}">${esc(label)} (${cnt(k)})</button>`;
+  const rows = list.map((c) => [
+    `<button type="button" class="linklike" data-prize-open="${esc(c.id)}"><b>${esc(prizeName(c.prize_id))}</b></button>${c.is_test ? ' <span class="pill free">Deneme</span>' : ''}`,
+    esc(c.username), int(Number(c.points)), tl(c.value_tl), prizePill(c.status), esc(prizeDate(c.created_at)),
+  ]);
+  const detail = state.prizeDetail ? adminPrizeDetail(state.prizeDetail) : '';
+  return `<div class="pp-seg" role="tablist">${tab('acik', 'Açık')}${tab('biten', 'Biten')}${tab('gercek', 'Gerçek')}${tab('deneme', 'Deneme')}${tab('hepsi', 'Hepsi')}</div>
+${detail}
+${table(['Ödül', 'Kullanıcı', 'Puan', 'Tutar', 'Aşama', 'Talep'], rows, 'Bu filtrede talep yok.')}
+${adminPrizeSummary()}
+${adminPrizeTestGrant()}`;
+}
+
+function adminPrizeDetail(d) {
+  const del = d.delivery ?? {};
+  const st = d.status;
+  const btn = (action, label, cls = '') => `<button type="button" class="${cls}" data-prize-act="${action}">${esc(label)}</button>`;
+  const actions = [];
+  if (st === 'inceleniyor') actions.push(btn('onayla', 'Onayla (hazırlanıyor)'));
+  if (['bilgi_bekleniyor', 'inceleniyor', 'hazirlaniyor'].includes(st)) actions.push(btn('reddet', 'Reddet (puan iade)', 'secondary'));
+  if (st === 'yolda') actions.push(btn('teslim', 'Teslim edildi'));
+  if (['hazirlaniyor', 'yolda'].includes(st)) actions.push(btn('teslim_edilemedi', d.attempts >= 1 ? 'Teslim edilemedi (2. kez → iade)' : 'Teslim edilemedi (1. deneme)', 'secondary'));
+  const codeForm = d.grp === 'voucher' && ['hazirlaniyor', 'yolda'].includes(st)
+    ? `<div class="pp-grid2 tight"><label>Çek / kod<input id="pcode" type="text" autocomplete="off"></label></div><div class="pp-actions left">${btn('kod', 'Kodu kaydet (teslim edildi)')}</div>` : '';
+  const cargoForm = d.grp === 'showcase' && st === 'hazirlaniyor' && !String(d.prize_id).match(/balon|tatil/)
+    ? `<div class="pp-grid2 tight"><label>Kargo firması<input id="pcompany" type="text"></label><label>Takip no<input id="ptracking" type="text"></label></div><div class="pp-actions left">${btn('kargo', 'Kargoya verildi')}</div>` : '';
+  const planForm = d.grp === 'showcase' && st === 'hazirlaniyor' && String(d.prize_id).match(/balon|tatil/)
+    ? `<div class="pp-grid2 tight"><label>Deneyim tarihi<input id="pdate" type="date"></label></div><div class="pp-actions left">${btn('planla', 'Tarihi kaydet')}</div>` : '';
+  const hist = (d.history ?? []).map((h) => `<li>${esc(prizeDate(h.at))} · ${esc(PRIZE_STATUS[h.status] ?? h.status)}${h.by_admin ? ' (yönetim)' : ''}${h.note ? ` — ${esc(h.note)}` : ''}</li>`).join('');
+  return `<section class="pp-card" id="pdetail" data-prize-id="${esc(d.id)}">
+<h3>${esc(prizeName(d.prize_id))} ${d.is_test ? '<span class="pill free">Deneme</span>' : ''} ${prizePill(st)}</h3>
+<div class="pp-grid2 tight">
+  <div><b>Kullanıcı:</b> ${esc(d.username)} · ${esc(d.email ?? '')}<br><span class="muted small">Hesap: ${esc(prizeDate(d.account_created))} · son 30 günde ${int(Number(d.coupons_30d ?? 0))} kupon · diğer talep ${int(Number(d.other_claims ?? 0))} · harcanabilir puan ${int(Math.round(Number(d.spendable ?? 0)))}</span></div>
+  <div><b>Puan / tutar:</b> ${int(Number(d.points))} · ${tl(d.value_tl)}<br><span class="muted small">Talep: ${esc(prizeDate(d.created_at))}${d.attempts ? ` · teslim denemesi ${int(d.attempts)}` : ''}</span></div>
+</div>
+<div class="pp-card inner"><b>Teslim bilgisi</b><br>${d.grp === 'voucher' ? `E-posta: ${esc(del.email ?? '–')}` : del.name ? `${esc(del.name)} · ${esc(del.phone)}<br>${esc(del.address ?? '')} ${esc(del.city ?? '')}<br><span class="muted small">18 yaş beyanı: ${del.adult ? 'evet' : 'hayır'}</span>` : '<span class="muted">Henüz girilmedi.</span>'}
+${d.code ? `<br>Kod: <code>${esc(d.code)}</code>` : ''}${d.tracking_no ? `<br>Kargo: ${esc(d.cargo_company ?? '')} · ${esc(d.tracking_no)}` : ''}${d.planned_date ? `<br>Tarih: ${esc(d.planned_date)}` : ''}</div>
+${codeForm}${cargoForm}${planForm}
+<div class="pp-actions left">${actions.join(' ')}</div>
+<div class="pp-grid2 tight"><label>Not (kullanıcı görmez)<input id="pnote" type="text" value="${esc(d.admin_note ?? '')}"></label></div>
+<div class="pp-actions left">${btn('not', 'Notu kaydet', 'secondary')} <button type="button" class="secondary" id="pclose">Kapat</button></div>
+<div class="msg" aria-live="polite" id="pmsg"></div>
+<details><summary>Aşama geçmişi</summary><ul class="small">${hist}</ul></details>
+</section>`;
+}
+
+function adminPrizeSummary() {
+  const sm = admin?.prizeSummary;
+  if (!sm) return '';
+  const real = (sm.by_prize ?? []).filter((x) => !x.is_test);
+  const test = (sm.by_prize ?? []).filter((x) => x.is_test);
+  const sum = (xs, k) => xs.reduce((t, x) => t + Number(x[k] ?? 0), 0);
+  const rows = (xs) => xs.map((x) => [esc(prizeName(x.prize_id)), int(Number(x.adet)), int(Number(x.puan)), tl(x.tl)]);
+  return `<section class="pp-card"><h3>Maliyet özeti</h3>
+<p class="muted small">Reddedilen, iptal ve iade edilen talepler hariç. Deneme talepleri maliyete girmez.</p>
+<p><b>Gerçek:</b> ${int(sum(real, 'adet'))} talep · ${tl(sum(real, 'tl'))} &nbsp; <b>Deneme:</b> ${int(sum(test, 'adet'))} talep · ${tl(sum(test, 'tl'))}</p>
+${table(['Ödül (gerçek)', 'Adet', 'Puan', 'Tutar'], rows(real), 'Henüz gerçek talep yok.')}
+</section>`;
+}
+
+function adminPrizeTestGrant() {
+  const ws = admin?.prizeSummary?.test_wallets ?? [];
+  const rows = ws.map((w) => [esc(w.username), int(Math.round(Number(w.left ?? 0))), esc(w.until ? prizeDate(w.until) : 'ilk talep bekleniyor')]);
+  return `<section class="pp-card"><h3>Deneme puanı</h3>
+<p class="muted small">Deneme puanı ilk talepten 24 saat sonra sıfırlanır. Yeniden vermek talepleri silmez; yeni 24 saatlik dönem başlatır. 0 verirsen kapanır.</p>
+<div class="pp-grid2 tight"><label>Kullanıcı adı<input id="tguser" type="text" autocomplete="off"></label><label>Puan<input id="tgpoints" type="number" value="100000" min="0" step="1000"></label></div>
+<div class="pp-actions left"><button type="button" id="tgsave">Deneme puanı ver</button></div><div class="msg" aria-live="polite" id="tgmsg"></div>
+${table(['Kullanıcı', 'Kalan deneme puanı', 'Sıfırlanma'], rows, 'Deneme puanı olan hesap yok.')}
+</section>`;
+}
+
 // Üyelik ödemeleri ve hile işaretleri (2026-11-07): üyelik ödemesi yönetici onayı olmadan çekilebilir olmaz,
 // hile işaretli partnerin ödemesi yönetici "gerçek" demedikçe yazılmaz
 const ADMIN_GATE_ERRORS = ['yonetici_degil', 'mfa_pin_gerekli'];
@@ -1515,6 +1605,7 @@ const ROUTES = {
   'yonetici/ayarlar': { title: s.adminLive.settings, render: () => errorsWarn() + adminSettingsScreen() },
   'yonetici/uyelik-odemeleri': { title: s.adminLive.bonus.title, render: () => errorsWarn() + adminBonusTabs() },
   'yonetici/dogrulama': { title: s.adminLive.group, render: adminBlockedScreen },
+  'yonetici/odul-talepleri': { title: 'Ödül Talepleri', render: () => errorsWarn() + adminPrizesScreen() },
   tanitim: { title: s.landing.title, render: landingScreen, public: true },
   giris: { title: s.login.title, render: loginScreen, public: true },
   'iki-adim': { title: s.twoFactor.title, render: twoFactorScreen, public: true },
@@ -1534,7 +1625,7 @@ const G_REPORTS = [s.menu.reports, [['raporlar/ozet', s.menu.summary], ['raporla
 const G_REP = [s.rep.group, [['temsilci', s.rep.menu], ['temsilci/isaretler', s.flags.menu]]];
 const G_ADMIN = [
   s.adminLive.group,
-  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/uyelik-odemeleri', s.adminLive.bonus.menu], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/ayarlar', s.adminLive.settings]],
+  [['yonetici/basvurular', s.adminLive.applications], ['yonetici/partnerler', s.adminLive.partners], ['yonetici/temsilciler', s.admin.reps], ['yonetici/uyelik-odemeleri', s.adminLive.bonus.menu], ['yonetici/odemeler', s.adminLive.payouts], ['yonetici/odul-talepleri', 'Ödül Talepleri'], ['yonetici/ayarlar', s.adminLive.settings]],
 ];
 // Önizleme (?ornek=1): her rolün menüsü elle seçilir. Bir kişi hem partner hem temsilci olabilir.
 const MENUS = {
@@ -2800,6 +2891,48 @@ function bind(key) {
       if (m) m.textContent = s.live.saved;
     });
   });
+  // Ödül talepleri (2026-11-13)
+  $$('[data-prize-filter]').forEach((b) =>
+    b.addEventListener('click', () => {
+      state.prizeFilter = b.dataset.prizeFilter;
+      rerender();
+    }),
+  );
+  $$('[data-prize-open]').forEach((b) =>
+    b.addEventListener('click', () =>
+      act(b, null, async () => {
+        state.prizeDetail = await live.prizeClaim(b.dataset.prizeOpen);
+        rerender();
+        app.querySelector('#pdetail')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }),
+    ),
+  );
+  $('#pclose')?.addEventListener('click', () => {
+    state.prizeDetail = null;
+    rerender();
+  });
+  $$('[data-prize-act]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const id = app.querySelector('#pdetail')?.dataset.prizeId;
+      const action = b.dataset.prizeAct;
+      if (!id) return;
+      if (action === 'reddet' && !confirm('Talep reddedilsin mi? Puan kullanıcıya geri verilir.')) return;
+      const val = (sel) => app.querySelector(sel)?.value?.trim() ?? '';
+      const data = { note: val('#pnote'), code: val('#pcode'), company: val('#pcompany'), tracking: val('#ptracking'), date: val('#pdate') || undefined };
+      act(b, app.querySelector('#pmsg'), async () => {
+        await live.prizeAction(id, action, data);
+        await reload();
+        state.prizeDetail = await live.prizeClaim(id);
+        rerender();
+      });
+    }),
+  );
+  $('#tgsave')?.addEventListener('click', (e) =>
+    act(e.currentTarget, app.querySelector('#tgmsg'), async () => {
+      await live.prizeTestGrant(app.querySelector('#tguser').value.trim(), Number(app.querySelector('#tgpoints').value || 0));
+      await reload();
+    }),
+  );
 }
 
 window.addEventListener('hashchange', async () => {

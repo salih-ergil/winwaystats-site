@@ -376,3 +376,9 @@ details.pp-appcard .pill { margin-left: auto; }
 .pp-review { margin: 4px 0 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; }
 .pp-review .pp-sub { margin-top: 0; }
 .pp-list.pp-plain { list-style: none; padding-left: 0; }
+
+/* Ödül talepleri (2026-11-13) */
+.linklike { background: none; border: 0; padding: 0; color: var(--text); cursor: pointer; text-align: left; font: inherit; }
+.linklike:hover b { text-decoration: underline; }
+.pp-card.inner { background: var(--surface-high); margin: 10px 0; padding: 12px; }
+#pdetail code { font-size: 15px; letter-spacing: 1px; }

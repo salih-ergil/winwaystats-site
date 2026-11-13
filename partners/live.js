@@ -268,6 +268,8 @@ export function createLive(W) {
         rpc('admin_partner_reviews'),
       ]);
       const [bonuses, bonusDone, adminFlags] = await extras;
+      // Ödül talepleri (2026-11-13): sunucuda kurulmamışsa diğer ekranlar yine açılır
+      const [prizeClaims, prizeSummary] = await Promise.all([soft(rpc('admin_prize_claims', {})), soft(rpc('admin_prize_summary'))]);
       const byId = Object.fromEntries(priv.map((x) => [x.partner_id, x]));
       const acct = Object.fromEntries(accts.map((x) => [x.partner_id, x]));
       const bal = {};
@@ -294,8 +296,15 @@ export function createLive(W) {
         bonusError: bonuses.error,
         flags: adminFlags.rows ?? [],
         flagsError: adminFlags.error,
+        prizeClaims: prizeClaims.rows ?? [],
+        prizeSummary: prizeSummary.rows ?? null,
+        prizeError: prizeClaims.error,
       };
     },
+    // Ödül talepleri yönetimi (2026-11-13; supabase/migrations/20261113180000_odul_talepleri.sql)
+    prizeClaim: (id) => rpc('admin_prize_claim', { p_claim: id }),
+    prizeAction: (id, action, data) => rpc('admin_prize_action', { p_claim: id, p_action: action, p_data: data ?? {} }),
+    prizeTestGrant: (username, points) => rpc('admin_prize_test_grant', { p_username: username, p_points: points }),
     async emergencyLock(token) {
       const { data, error } = await sb.functions.invoke('partner-yonetim', { body: { action: 'acil_kilit', token } });
       return !error && data?.ok === true;
