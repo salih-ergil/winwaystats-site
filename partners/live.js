@@ -269,7 +269,7 @@ export function createLive(W) {
       ]);
       const [bonuses, bonusDone, adminFlags] = await extras;
       // Ödül talepleri (2026-11-13): sunucuda kurulmamışsa diğer ekranlar yine açılır
-      const [prizeClaims, prizeSummary] = await Promise.all([soft(rpc('admin_prize_claims', {})), soft(rpc('admin_prize_summary'))]);
+      const [prizeClaims, prizeSummary, teamRequests] = await Promise.all([soft(rpc('admin_prize_claims', {})), soft(rpc('admin_prize_summary')), soft(rpc('admin_prize_team_requests'))]);
       const byId = Object.fromEntries(priv.map((x) => [x.partner_id, x]));
       const acct = Object.fromEntries(accts.map((x) => [x.partner_id, x]));
       const bal = {};
@@ -299,13 +299,14 @@ export function createLive(W) {
         prizeClaims: prizeClaims.rows ?? [],
         prizeSummary: prizeSummary.rows ?? null,
         prizeError: prizeClaims.error,
+        teamRequests: teamRequests.rows ?? null,
       };
     },
     // Ödül talepleri yönetimi (2026-11-13; supabase/migrations/20261113180000_odul_talepleri.sql)
     // Sadece ödül ekibi (prize_admins; partner yönetimine erişimi yok): yalnız ödül talepleri okunur
     async loadPrizeAdmin() {
-      const [prizeClaims, prizeSummary] = await Promise.all([rpc('admin_prize_claims', {}), rpc('admin_prize_summary')]);
-      return { prizeClaims: prizeClaims ?? [], prizeSummary: prizeSummary ?? null, prizeOnly: true };
+      const [prizeClaims, prizeSummary, teamRequests] = await Promise.all([rpc('admin_prize_claims', {}), rpc('admin_prize_summary'), rpc('admin_prize_team_requests')]);
+      return { prizeClaims: prizeClaims ?? [], prizeSummary: prizeSummary ?? null, teamRequests: teamRequests ?? null, prizeOnly: true };
     },
     prizeClaim: (id) => rpc('admin_prize_claim', { p_claim: id }),
     prizeAction: (id, action, data) => rpc('admin_prize_action', { p_claim: id, p_action: action, p_data: data ?? {} }),

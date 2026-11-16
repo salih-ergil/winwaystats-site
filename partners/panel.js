@@ -2,7 +2,7 @@
 // Ekranlar veriyi `data` ve `api` üzerinden okur. Gerçek veri live.js'ten (Supabase) aynı biçimde gelir;
 // adres ?ornek=1 ile açılınca örnek veri (sample.js) gösterilir.
 import { buildSample } from './sample.js?v=e1b8aa27ab';
-import { createLive } from './live.js?v=a6ba4734e6';
+import { createLive } from './live.js?v=2679eaef3a';
 import { loadCountries, picker, PICKER_CSS } from '/secim.js?v=29fc971418';
 
 const W = window.WWP;
@@ -1420,6 +1420,7 @@ function adminPrizesScreen() {
 ${detail}
 ${table(['Ödül', 'Kullanıcı', 'Puan', 'Tutar', 'Aşama', 'Talep'], rows, 'Bu filtrede talep yok.')}
 ${adminPrizeSummary()}
+${adminTeamRequests()}
 ${me?.admin ? adminPrizeTestGrant() : ''}`;
 }
 
@@ -1434,9 +1435,11 @@ function adminPrizeDetail(d) {
   if (['hazirlaniyor', 'yolda'].includes(st)) actions.push(btn('teslim_edilemedi', d.attempts >= 1 ? 'Teslim edilemedi (2. kez → iade)' : 'Teslim edilemedi (1. deneme)', 'secondary'));
   const codeForm = d.grp === 'voucher' && ['hazirlaniyor', 'yolda'].includes(st)
     ? `<div class="pp-grid2 tight"><label>Çek / kod<input id="pcode" type="text" autocomplete="off"></label></div><div class="pp-actions left">${btn('kod', 'Kodu kaydet (teslim edildi)')}</div>` : '';
-  const cargoForm = d.grp === 'showcase' && st === 'hazirlaniyor' && !String(d.prize_id).match(/balon|tatil/)
+  // Kargo: ürün (kind product); tarih: bilet, gezi, etkinlik, hizmet (2026-11-16; eski talepte ada göre)
+  const dated = d.kind ? d.kind !== 'product' : /balon|tatil/.test(String(d.prize_id));
+  const cargoForm = d.grp === 'showcase' && st === 'hazirlaniyor' && !dated
     ? `<div class="pp-grid2 tight"><label>Kargo firması<input id="pcompany" type="text"></label><label>Takip no<input id="ptracking" type="text"></label></div><div class="pp-actions left">${btn('kargo', 'Kargoya verildi')}</div>` : '';
-  const planForm = d.grp === 'showcase' && st === 'hazirlaniyor' && String(d.prize_id).match(/balon|tatil/)
+  const planForm = d.grp === 'showcase' && st === 'hazirlaniyor' && dated
     ? `<div class="pp-grid2 tight"><label>Deneyim tarihi<input id="pdate" type="date"></label></div><div class="pp-actions left">${btn('planla', 'Tarihi kaydet')}</div>` : '';
   const hist = (d.history ?? []).map((h) => `<li>${esc(prizeDate(h.at))} · ${esc(PRIZE_STATUS[h.status] ?? h.status)}${h.by_admin ? ' (yönetim)' : ''}${h.note ? ` — ${esc(h.note)}` : ''}</li>`).join('');
   return `<section class="pp-card" id="pdetail" data-prize-id="${esc(d.id)}">
@@ -1445,7 +1448,7 @@ function adminPrizeDetail(d) {
   <div><b>Kullanıcı:</b> ${esc(d.username)} · ${esc(d.email ?? '')}<br><span class="muted small">Hesap: ${esc(prizeDate(d.account_created))} · son 30 günde ${int(Number(d.coupons_30d ?? 0))} kupon · diğer talep ${int(Number(d.other_claims ?? 0))} · harcanabilir puan ${int(Math.round(Number(d.spendable ?? 0)))}</span></div>
   <div><b>Puan / tutar:</b> ${int(Number(d.points))} · ${tl(d.value_tl)}<br><span class="muted small">Talep: ${esc(prizeDate(d.created_at))}${d.attempts ? ` · teslim denemesi ${int(d.attempts)}` : ''}</span></div>
 </div>
-<div class="pp-card inner"><b>Teslim bilgisi</b><br>${d.grp === 'voucher' ? `E-posta: ${esc(del.email ?? '–')}` : del.name ? `${esc(del.name)} · T.C. ${esc(del.tc ?? '–')} · ${esc(del.phone)}<br>${esc(del.address ?? '')} ${esc(del.district ?? '')} ${esc(del.city ?? '')} ${esc(del.postal ?? '')}${del.companion ? `<br>İkinci kişi: ${esc(del.companion)}` : ''}${del.note ? `<br>Not: ${esc(del.note)}` : ''}<br><span class="muted small">18 yaş beyanı: ${del.adult ? 'evet' : 'hayır'}</span>` : '<span class="muted">Henüz girilmedi.</span>'}
+<div class="pp-card inner"><b>Teslim bilgisi</b><br>${prizeDeliveryHtml(d, del)}
 ${d.code ? `<br>Kod: <code>${esc(d.code)}</code>` : ''}${d.tracking_no ? `<br>Kargo: ${esc(d.cargo_company ?? '')} · ${esc(d.tracking_no)}` : ''}${d.planned_date ? `<br>Tarih: ${esc(d.planned_date)}` : ''}</div>
 ${codeForm}${cargoForm}${planForm}
 <div class="pp-actions left">${actions.join(' ')}</div>
@@ -1453,6 +1456,42 @@ ${codeForm}${cargoForm}${planForm}
 <div class="pp-actions left">${btn('not', 'Notu kaydet', 'secondary')} <button type="button" class="secondary" id="pclose">Kapat</button></div>
 <div class="msg" aria-live="polite" id="pmsg"></div>
 <details><summary>Aşama geçmişi</summary><ul class="small">${hist}</ul></details>
+</section>`;
+}
+
+const PRIZE_KIND = { digital: 'Kod', teamcard: 'Takım mağazası kartı', product: 'Ürün (kargo)', service: 'Hizmet', event: 'Etkinlik', ticket: 'Maç bileti', season: 'Kombine', trip: 'Gezi' };
+const PRIZE_TEAMS = { galatasaray: 'Galatasaray (GS Store)', fenerbahce: 'Fenerbahçe (Fenerium)', besiktas: 'Beşiktaş (Kartal Yuvası)', trabzonspor: 'Trabzonspor (TS Club)' };
+
+/** Talep formundaki bilgiler (2026-11-16): ödül türüne göre takım, maç, katılımcılar, adres / şehir, tarih tercihi, beyanlar */
+function prizeDeliveryHtml(d, del) {
+  const kind = d.kind ? `<span class="muted small">Tür: ${esc(PRIZE_KIND[d.kind] ?? d.kind)}${d.persons > 1 ? ` · ${int(d.persons)} kişi` : ''}</span><br>` : '';
+  if (d.grp === 'voucher') {
+    return `${kind}E-posta: ${esc(del.email ?? '–')}${del.team ? `<br>Kulüp: <b>${esc(PRIZE_TEAMS[del.team] ?? del.team)}</b>` : ''}`;
+  }
+  if (!del.name) return `${kind}<span class="muted">Henüz girilmedi.</span>`;
+  const lines = [`${esc(del.name)} · T.C. ${esc(del.tc ?? '–')} · ${esc(del.phone ?? '–')}`];
+  if (del.team) lines.push(`Takım: <b>${esc(del.team)}</b>`);
+  if (del.match) lines.push(`Maç: <b>${esc(del.match)}</b>${del.match_id ? ` <span class="muted small">(maç no ${esc(del.match_id)})</span>` : ''}`);
+  if (del.address || del.district || del.city || del.postal) lines.push(`${esc(del.address ?? '')} ${esc(del.district ?? '')} ${esc(del.city ?? '')} ${esc(del.postal ?? '')}`.trim());
+  if (del.size) lines.push(`Beden / numara: ${esc(del.size)}`);
+  if (del.date_pref) lines.push(`Tarih tercihi: ${esc(del.date_pref)}`);
+  (del.attendees ?? []).forEach((a, i) => lines.push(`${i + 1}. katılımcı: ${esc(a.name ?? '')}${a.tc ? ` · T.C. ${esc(a.tc)}` : ''}${a.birth ? ` · doğum ${esc(a.birth)}` : ''}${a.phone ? ` · ${esc(a.phone)}` : ''}${a.passolig ? ' · Passolig var' : ''}`));
+  if (del.companion) lines.push(`İkinci kişi: ${esc(del.companion)}`);
+  if (del.note) lines.push(`Not: ${esc(del.note)}`);
+  const decl = [`18 yaş: ${del.adult ? 'evet' : 'hayır'}`, del.consent ? 'ikinci kişinin izni: evet' : '', del.passport ? 'pasaport / vize beyanı: evet' : ''].filter(Boolean).join(' · ');
+  return `${kind}${lines.join('<br>')}<br><span class="muted small">${esc(decl)}</span>`;
+}
+
+/** Takım istekleri (2026-11-16): hediye kartı listesinde olmayan takımlar; talep değildir, kurumsal anlaşmalar için */
+function adminTeamRequests() {
+  const tr = admin?.teamRequests;
+  if (!tr) return '';
+  const rows = (tr.by_team ?? []).map((x) => [`<b>${esc(x.team)}</b>`, int(Number(x.n)), int(Number(x.kisi)), esc(prizeDate(x.son))]);
+  const recent = (tr.recent ?? []).slice(0, 20).map((x) => [esc(x.team), esc(x.wish ?? '–'), esc(x.username), esc(prizeDate(x.created_at))]);
+  return `<section class="pp-card"><h3>Takım istekleri</h3>
+<p class="muted small">Takım mağazası hediye kartı listesinde olmayan takımlar için kullanıcıların yazdığı istekler. Talep değildir, puan harcanmaz; kulüplerle görüşmede kullanılır.</p>
+${table(['Takım', 'İstek', 'Kişi', 'Son istek'], rows, 'Henüz istek yok.')}
+<details><summary>Son istekler</summary>${table(['Takım', 'Ne istiyor', 'Kullanıcı', 'Tarih'], recent, 'Henüz istek yok.')}</details>
 </section>`;
 }
 

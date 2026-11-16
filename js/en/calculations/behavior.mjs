@@ -24,40 +24,6 @@ export function balanceAt(ledger, at) {
     }
     return balance;
 }
-/**
- * Performans grafiği: son `days` günün her gününün sonundaki bakiye ve
- * o güne kadarki en fazla 30 günün ortalaması (kesik çizgi).
- */
-export function balanceSeries(ledger, now, days = 30) {
-    const end = now.getTime();
-    const points = [];
-    for (let i = days - 1; i >= 0; i--) {
-        const at = i === 0 ? end : end - i * DAY;
-        points.push({ at, balance: balanceAt(ledger, at), average: 0 });
-    }
-    points.forEach((p, i) => {
-        const window = points.slice(Math.max(0, i - 29), i + 1);
-        p.average = Math.round(window.reduce((s, w) => s + w.balance, 0) / window.length);
-    });
-    return points;
-}
-/**
- * Haftalık değişim: bakiyenin 7 gün önceye göre değişimi.
- * Bu hafta aylık bütçe yenilendiyse karşılaştırma yenilemeden sonraki bakiyeyle yapılır
- * (yenilemenin kendisi "kazanç" sayılmaz).
- */
-export function weeklyChange(ledger, now) {
-    const end = now.getTime();
-    let from = end - 7 * DAY;
-    const lastGrant = [...ledger].reverse().find((e) => e.type === 'monthly_grant' && time(e.at) > from && time(e.at) <= end);
-    if (lastGrant)
-        from = time(lastGrant.at);
-    const coins = ledger
-        .filter((e) => isCoinFlow(e) && time(e.at) > from && time(e.at) <= end)
-        .reduce((s, e) => s + e.amount, 0);
-    const base = lastGrant ? lastGrant.balanceAfter : balanceAt(ledger, from);
-    return { coins: Math.round(coins), percent: base > 0 ? round1((coins / base) * 100) : null };
-}
 /** Son `days` günde sonuçlanan kuponlar */
 function settledWithin(coupons, now, days) {
     const end = now.getTime();
@@ -103,16 +69,12 @@ export function budgetBalance(ledger, now, monthsAgo = 0) {
     });
     return Math.round(100 - diffs.reduce((a, b) => a + b, 0) / diffs.length);
 }
-/**
- * Telafi amaçlı karar: kaybeden bir kuponun sonucu belli olduktan sonraki 24 saat içinde,
- * o kupondan DAHA YÜKSEK tutarla oynanan kupon.
- */
-export function isCompensation(coupon, all) {
-    return compensationIds(all).has(coupon.id);
-}
 /** Uzun geçmişlerde (15 ay, ~1.500 kupon) hızlı olsun diye: kupon listesi başına bir kez hesaplanır */
 const compensationCache = new WeakMap();
-/** Telafi amaçlı kuponların kimlikleri (isCompensation ile aynı kural) */
+/**
+ * Telafi amaçlı kuponların kimlikleri: kaybeden bir kuponun sonucu belli olduktan sonraki 24 saat içinde,
+ * o kupondan DAHA YÜKSEK tutarla oynanan kuponlar.
+ */
 export function compensationIds(all) {
     const hit = compensationCache.get(all);
     if (hit)
@@ -187,45 +149,6 @@ export function assessIncreases(coupons, now) {
         const net = Math.round(inWindow.reduce((s, x) => s + x.payout - x.stake, 0));
         return { coupon: c, windowEnd, net, outcome: net < 0 ? 'deepened' : 'not_deepened' };
     });
-}
-export function compensationTrend(coupons, now) {
-    const end = now.getTime();
-    const assessed = assessIncreases(coupons, now);
-    const inRange = (from, to) => assessed.filter((a) => time(a.coupon.createdAt) > from && time(a.coupon.createdAt) <= to);
-    const thisWeek = inRange(end - 7 * DAY, end);
-    const lastWeek = inRange(end - 14 * DAY, end - 7 * DAY);
-    const deepened = (list) => list.filter((a) => a.outcome === 'deepened').length;
-    const deepenedThisWeek = deepened(thisWeek);
-    const deepenedLastWeek = deepened(lastWeek);
-    return {
-        thisWeek: thisWeek.length,
-        lastWeek: lastWeek.length,
-        deepenedThisWeek,
-        deepenedLastWeek,
-        pendingThisWeek: thisWeek.filter((a) => a.outcome === 'pending').length,
-        changePercent: deepenedLastWeek > 0 ? Math.round(((deepenedThisWeek - deepenedLastWeek) / deepenedLastWeek) * 100) : null,
-    };
-}
-export function burnRate(ledger, now) {
-    const end = now.getTime();
-    const net = ledger.filter((e) => isCoinFlow(e) && time(e.at) > end - 7 * DAY && time(e.at) <= end).reduce((s, e) => s + e.amount, 0);
-    const dailyNet = Math.round(net / 7);
-    const balance = balanceAt(ledger, end);
-    return {
-        dailyNet,
-        daysLeft: dailyNet < 0 ? Math.max(0, Math.round(balance / -dailyNet)) : null,
-        remainingPercent: Math.round((balance / MONTHLY_BUDGET) * 100),
-    };
-}
-export function frequency(coupons, now) {
-    const end = now.getTime();
-    const count = (from, to) => coupons.filter((c) => time(c.createdAt) > from && time(c.createdAt) <= to).length;
-    return {
-        lastDay: count(end - DAY, end),
-        previousDay: count(end - 2 * DAY, end - DAY),
-        week: count(end - 7 * DAY, end),
-        previousWeek: count(end - 14 * DAY, end - 7 * DAY),
-    };
 }
 /**
  * Zaman dilimleri: günler (son 30 gün), haftalar (son 12 hafta) ya da aylar (son `months` ay, varsayılan 6), eskiden yeniye.
@@ -343,19 +266,6 @@ export function monthUsage(history, now) {
     const returned = after.filter((e) => e.type === 'payout' || e.type === 'refund' || e.type === 'correction').reduce((s, e) => s + e.amount, 0);
     const balance = balanceAt(ledger, end);
     return { budget: MONTHLY_BUDGET, staked, returned: Math.round(returned), balance, remainingPercent: Math.round((balance / MONTHLY_BUDGET) * 100), since };
-}
-export function summarizeBehavior(history, now) {
-    const ledger = [...history.ledger].sort((a, b) => time(a.at) - time(b.at));
-    return {
-        balance: balanceAt(ledger, now.getTime()),
-        weekly: weeklyChange(ledger, now),
-        roi30: roi(history.coupons, now),
-        budgetBalance: budgetBalance(ledger, now),
-        series: balanceSeries(ledger, now),
-        compensation: compensationTrend(history.coupons, now),
-        burn: burnRate(ledger, now),
-        frequency: frequency(history.coupons, now),
-    };
 }
 function round1(n) {
     return Math.round(n * 10) / 10;
