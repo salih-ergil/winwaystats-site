@@ -58,27 +58,54 @@ export const trHourSlot = (ms) => Math.floor(new Date(ms + TR).getUTCHours() / H
 const trDay = (ms) => Math.floor((ms + TR) / DAY) * DAY - TR;
 /** Bir anda bakiye (coin defterinden) */
 function balanceAt(ledger, at) {
-    let b = 0;
-    for (const e of ledger) {
-        if (Date.parse(e.at) > at)
-            break;
-        b = e.balanceAfter;
+    // Sıralı defterde ikili arama (Salih, 2026-11-24: eski telefonda kupon başına bütün defteri taramak ana sayfayı ~4 sn bekletiyordu)
+    const times = timesOf(ledger);
+    let lo = 0;
+    let hi = times.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (times[mid] > at)
+            hi = mid;
+        else
+            lo = mid + 1;
     }
-    return b;
+    return lo > 0 ? ledger[lo - 1].balanceAfter : 0;
 }
+/** Tarih çözümü önbellekli: aynı kayıt tarihi binlerce kez çözülüyordu */
+const parsed = new Map();
+function ts(iso) {
+    let v = parsed.get(iso);
+    if (v === undefined) {
+        v = Date.parse(iso);
+        if (parsed.size > 50000)
+            parsed.clear();
+        parsed.set(iso, v);
+    }
+    return v;
+}
+const ledgerTimes = new WeakMap();
+function timesOf(ledger) {
+    let t = ledgerTimes.get(ledger);
+    if (!t) {
+        t = ledger.map((e) => ts(e.at));
+        ledgerTimes.set(ledger, t);
+    }
+    return t;
+}
+const grantTimes = new WeakMap();
 /** Kuponun sonuçlanma anı (bekleyen kupon için null) */
 export function settledAtOf(c, payoutAt) {
     if (c.status === 'pending')
         return null;
-    const s = c.settledAt ? Date.parse(c.settledAt) : NaN;
-    return Number.isFinite(s) ? s : payoutAt.get(c.id) ?? Date.parse(c.createdAt);
+    const s = c.settledAt ? ts(c.settledAt) : NaN;
+    return Number.isFinite(s) ? s : payoutAt.get(c.id) ?? ts(c.createdAt);
 }
 /** Kazanç / iade hareketlerinin zamanı (sonuçlanma anı kaydı olmayan eski kuponlar için) */
 function payoutTimes(ledger) {
     const m = new Map();
     for (const e of ledger)
         if ((e.type === 'payout' || e.type === 'refund') && e.couponId && !m.has(e.couponId))
-            m.set(e.couponId, Date.parse(e.at));
+            m.set(e.couponId, ts(e.at));
     return m;
 }
 /**
@@ -94,17 +121,27 @@ function openStakeAt(spans, at, since, except) {
 }
 /** at anından önceki (dahil) son aylık bütçe kaydının zamanı */
 function grantBefore(ledger, at) {
-    let g = -Infinity;
-    for (const e of ledger)
-        if (e.type === 'monthly_grant' && Date.parse(e.at) <= at)
-            g = Math.max(g, Date.parse(e.at));
-    return g;
+    let g = grantTimes.get(ledger);
+    if (!g) {
+        g = ledger.filter((e) => e.type === 'monthly_grant').map((e) => ts(e.at)).sort((a, b) => a - b);
+        grantTimes.set(ledger, g);
+    }
+    let lo = 0;
+    let hi = g.length;
+    while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (g[mid] > at)
+            hi = mid;
+        else
+            lo = mid + 1;
+    }
+    return lo > 0 ? g[lo - 1] : -Infinity;
 }
 function couponSpans(history) {
     const payoutAt = payoutTimes(history.ledger);
     return history.coupons.map((c) => ({
         id: c.id,
-        from: Date.parse(c.createdAt),
+        from: ts(c.createdAt),
         to: settledAtOf(c, payoutAt) ?? Infinity,
         stake: c.stake,
     }));
@@ -115,13 +152,13 @@ export function couponFacts(history, leagueOf = () => undefined) {
     for (const e of history.ledger)
         if (e.type === 'stake' && e.couponId)
             stakeBalance.set(e.couponId, e.balanceAfter + Math.abs(e.amount));
-    const ledger = [...history.ledger].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const ledger = [...history.ledger].sort((a, b) => ts(a.at) - ts(b.at));
     const payoutAt = payoutTimes(history.ledger);
     const spans = couponSpans(history);
     return history.coupons
         .filter((c) => c.status !== 'pending')
         .map((c) => {
-        const at = Date.parse(c.createdAt);
+        const at = ts(c.createdAt);
         const balanceBefore = (stakeBalance.get(c.id) ?? balanceAt(ledger, at - 1)) + openStakeAt(spans, at, grantBefore(ledger, at), c.id);
         return {
             id: c.id,
@@ -148,10 +185,10 @@ export function couponShares(history) {
     for (const e of history.ledger)
         if (e.type === 'stake' && e.couponId)
             stakeBalance.set(e.couponId, e.balanceAfter + Math.abs(e.amount));
-    const ledger = [...history.ledger].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const ledger = [...history.ledger].sort((a, b) => ts(a.at) - ts(b.at));
     const spans = couponSpans(history);
     return new Map(history.coupons.map((c) => {
-        const at = Date.parse(c.createdAt);
+        const at = ts(c.createdAt);
         const before = (stakeBalance.get(c.id) ?? balanceAt(ledger, at - 1)) + openStakeAt(spans, at, grantBefore(ledger, at), c.id);
         return [c.id, before > 0 ? Math.min(1, c.stake / before) : 1];
     }));
@@ -164,10 +201,26 @@ export function couponShares(history) {
 export function reference(facts, until) {
     const list = facts.filter((f) => f.status !== 'void' && f.at < until && f.at >= until - REFERENCE_DAYS * DAY);
     const gaps = [];
+    // Liste oynanma sırasındaysa ikili arama (Salih, 2026-11-24: örnek veride ~1.100 kupon, eski telefonda ~6 sn); değilse eski yol
+    const ascending = list.every((x, i) => i === 0 || list[i - 1].at <= x.at);
     for (const f of list) {
         if (f.settledAt >= until)
             continue;
-        const next = list.find((x) => x.at > f.settledAt);
+        let next;
+        if (ascending) {
+            let lo = 0;
+            let hi = list.length;
+            while (lo < hi) {
+                const mid = (lo + hi) >> 1;
+                if (list[mid].at > f.settledAt)
+                    hi = mid;
+                else
+                    lo = mid + 1;
+            }
+            next = list[lo];
+        }
+        else
+            next = list.find((x) => x.at > f.settledAt);
         if (next)
             gaps.push((next.at - f.settledAt) / HOUR);
     }
@@ -333,22 +386,22 @@ export function orgCalendar(facts, now) {
 export function balanceView(ledger, now, coupons = []) {
     const spans = couponSpans({ coupons, ledger });
     const open = (at) => openStakeAt(spans, at + 1, grantBefore(ledger, at));
-    const sorted = [...ledger].filter((e) => Date.parse(e.at) <= now).sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
+    const sorted = [...ledger].filter((e) => ts(e.at) <= now).sort((a, b) => ts(a.at) - ts(b.at));
     const grants = sorted.filter((e) => e.type === 'monthly_grant');
     const grant = grants[grants.length - 1];
-    const startAt = grant ? Date.parse(grant.at) : null;
-    const series = sorted.filter((e) => startAt === null || Date.parse(e.at) >= startAt).map((e) => ({ at: Date.parse(e.at), balance: e.balanceAfter }));
+    const startAt = grant ? ts(grant.at) : null;
+    const series = sorted.filter((e) => startAt === null || ts(e.at) >= startAt).map((e) => ({ at: ts(e.at), balance: e.balanceAfter }));
     const start = grant?.balanceAfter ?? 0;
     const weekAgo = [...series].reverse().find((p) => p.at <= now - 7 * DAY)?.balance ?? start;
     const current = sorted[sorted.length - 1]?.balanceAfter ?? 0;
     const from = now - 30 * DAY;
-    const before = sorted.filter((e) => Date.parse(e.at) < from).pop();
+    const before = sorted.filter((e) => ts(e.at) < from).pop();
     // Kupon oynanınca grafik değişmez (tutar sonuçlanana kadar bakiyeye sayılır); sonuçlanınca fark görünür.
     // Noktalar: coin hareketleri (kupon tutarı ve ay başı sıfırlama kaydı hariç) ve kayıp kuponların sonuçlanma anları.
     const effective = (t) => balanceAt(sorted, t) + open(t);
     const times = new Set();
     for (const e of sorted) {
-        const t = Date.parse(e.at);
+        const t = ts(e.at);
         if (t >= from && e.type !== 'monthly_reset' && e.type !== 'stake')
             times.add(t);
     }
